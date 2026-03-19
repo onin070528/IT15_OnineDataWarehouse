@@ -1,0 +1,345 @@
+﻿@using it15_webproject_mvc.Models
+@{
+    var totalOrgs = (int)(ViewData["TotalOrganizations"] ?? 0);
+    var totalUsers = (int)(ViewData["TotalUsers"] ?? 0);
+    var activeUsers = (int)(ViewData["ActiveUsers"] ?? 0);
+    var inactiveUsers = (int)(ViewData["InactiveUsers"] ?? 0);
+    var totalRoles = (int)(ViewData["TotalRoles"] ?? 0);
+    var totalSources = (int)(ViewData["TotalSources"] ?? 0);
+    var activeSources = (int)(ViewData["ActiveSources"] ?? 0);
+    var totalSubmissions = (int)(ViewData["TotalSubmissions"] ?? 0);
+    var pendingSubmissions = (int)(ViewData["PendingSubmissions"] ?? 0);
+    var integratedSubmissions = (int)(ViewData["IntegratedSubmissions"] ?? 0);
+    var failedSubmissions = (int)(ViewData["FailedSubmissions"] ?? 0);
+    var totalAuditLogs = (int)(ViewData["TotalAuditLogs"] ?? 0);
+    var todayAuditLogs = (int)(ViewData["TodayAuditLogs"] ?? 0);
+    var totalStagingRows = (int)(ViewData["TotalStagingRows"] ?? 0);
+    var validRows = (int)(ViewData["ValidRows"] ?? 0);
+    var errorRows = (int)(ViewData["ErrorRows"] ?? 0);
+    var recentLogs = ViewData["RecentLogs"] as List<AuditLog> ?? new List<AuditLog>();
+    var recentUsers = ViewData["RecentUsers"] as List<User> ?? new List<User>();
+    var recentPayments = ViewData["RecentPayments"] as List<Payment> ?? new List<Payment>();
+    var successRate = totalStagingRows > 0 ? Math.Round(validRows * 100.0 / totalStagingRows, 1) : 0.0;
+
+    // Income KPIs
+    var totalRevenue = (decimal)(ViewData["TotalRevenue"] ?? 0m);
+    var thisMonthRevenue = (decimal)(ViewData["ThisMonthRevenue"] ?? 0m);
+    var paidSubscriptions = (int)(ViewData["PaidSubscriptions"] ?? 0);
+    var freeOrgs = (int)(ViewData["FreeOrgs"] ?? 0);
+    var basicOrgs = (int)(ViewData["BasicOrgs"] ?? 0);
+    var premiumOrgs = (int)(ViewData["PremiumOrgs"] ?? 0);
+}
+
+<div class="py-6 min-h-full">
+
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 class="text-xl font-bold" style="color: #09637E;">System Overview</h2>
+        <p class="text-sm text-gray-500 mt-1 mb-6">Platform-wide metrics — users, organizations, data pipeline, and system health.</p>
+
+        <!-- KPI Cards Row 1 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalOrgs</p>
+                        <p class="text-sm mt-1" style="color: rgba(255,255,255,0.8);">Organizations</p>
+                    </div>
+                    <svg class="w-8 h-8" style="color: rgba(255,255,255,0.4);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #09637E, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalUsers</p>
+                        <p class="text-sm mt-1" style="color: rgba(255,255,255,0.8);">Total Users</p>
+                    </div>
+                    <svg class="w-8 h-8" style="color: rgba(255,255,255,0.4);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: rgba(255,255,255,0.65);">@activeUsers active · @inactiveUsers inactive</p>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #7AB2B2, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalSources</p>
+                        <p class="text-sm mt-1" style="color: rgba(255,255,255,0.8);">Data Sources</p>
+                    </div>
+                    <svg class="w-8 h-8" style="color: rgba(255,255,255,0.4);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: rgba(255,255,255,0.65);">@activeSources active</p>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #09637E, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalSubmissions</p>
+                        <p class="text-sm mt-1" style="color: rgba(255,255,255,0.8);">Submissions</p>
+                    </div>
+                    <svg class="w-8 h-8" style="color: rgba(255,255,255,0.4);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: rgba(255,255,255,0.65);">@pendingSubmissions pending</p>
+            </div>
+        </div>
+
+        <!-- KPI Cards Row 2 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-white border-2 rounded-2xl p-5" style="border-color: #7AB2B2;">
+                <p class="text-2xl font-bold" style="color: #09637E;">@totalStagingRows.ToString("N0")</p>
+                <p class="text-xs text-gray-400 mt-1">Staging Rows</p>
+            </div>
+            <div class="bg-white border-2 rounded-2xl p-5" style="border-color: #7AB2B2;">
+                <p class="text-2xl font-bold" style="color: #088395;">@integratedSubmissions</p>
+                <p class="text-xs text-gray-400 mt-1">Integrated</p>
+            </div>
+            <div class="bg-white border-2 rounded-2xl p-5" style="border-color: #7AB2B2;">
+                <p class="text-2xl font-bold text-red-500">@failedSubmissions</p>
+                <p class="text-xs text-gray-400 mt-1">Failed</p>
+            </div>
+            <div class="bg-white border-2 rounded-2xl p-5" style="border-color: #7AB2B2;">
+                <p class="text-2xl font-bold" style="color: #088395;">@successRate%</p>
+                <p class="text-xs text-gray-400 mt-1">Data Quality</p>
+                <div class="w-full rounded-full h-1.5 mt-2" style="background: #EBF4F6;">
+                    <div class="h-1.5 rounded-full" style="background: #088395; width: @(successRate)%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue & Subscription Overview -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 class="text-xl font-bold mb-1" style="color: #09637E;">Revenue & Subscriptions</h2>
+        <p class="text-sm text-gray-500 mb-6">Income from subscription payments and plan distribution.</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #088395, #09637E);">
+                <p class="text-2xl font-bold">₱@totalRevenue.ToString("N2")</p>
+                <p class="text-xs mt-1" style="color: rgba(255,255,255,0.8);">Total Revenue</p>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #09637E, #7AB2B2);">
+                <p class="text-2xl font-bold">₱@thisMonthRevenue.ToString("N2")</p>
+                <p class="text-xs mt-1" style="color: rgba(255,255,255,0.8);">This Month</p>
+            </div>
+            <div class="bg-white border-2 rounded-2xl p-5" style="border-color: #7AB2B2;">
+                <p class="text-2xl font-bold" style="color: #088395;">@paidSubscriptions</p>
+                <p class="text-xs text-gray-400 mt-1">Paid Subscriptions</p>
+            </div>
+            <div class="bg-white border-2 rounded-2xl p-5" style="border-color: #7AB2B2;">
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-500">Free</span><span class="font-bold" style="color: #09637E;">@freeOrgs</span>
+                        </div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-500">Basic</span><span class="font-bold" style="color: #088395;">@basicOrgs</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-500">Premium</span><span class="font-bold" style="color: #09637E;">@premiumOrgs</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Plan Distribution</p>
+            </div>
+        </div>
+
+        <!-- Recent Payments -->
+        @if (recentPayments.Any())
+        {
+            <h4 class="text-sm font-bold mb-3" style="color: #09637E;">Recent Payments</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #EBF4F6;">
+                            <th class="text-left py-2 px-3 font-semibold text-xs" style="color: #088395;">Subscriber</th>
+                            <th class="text-left py-2 px-3 font-semibold text-xs" style="color: #088395;">Organization</th>
+                            <th class="text-left py-2 px-3 font-semibold text-xs" style="color: #088395;">Plan</th>
+                            <th class="text-left py-2 px-3 font-semibold text-xs" style="color: #088395;">Amount</th>
+                            <th class="text-left py-2 px-3 font-semibold text-xs" style="color: #088395;">Paid At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in recentPayments)
+                        {
+                            <tr class="border-b border-gray-100">
+                                <td class="py-2 px-3 text-gray-800 font-medium">@(p.User?.Full_name ?? "Unknown")</td>
+                                <td class="py-2 px-3 text-gray-600">@(p.Organization?.OrganizationName ?? "—")</td>
+                                <td class="py-2 px-3"><span class="text-xs font-semibold px-2 py-0.5 rounded-full" style="background: #EBF4F6; color: #09637E;">@p.PlanName</span></td>
+                                <td class="py-2 px-3 font-bold" style="color: #09637E;">₱@p.Amount.ToString("N2")</td>
+                                <td class="py-2 px-3 text-gray-500 text-xs">@(p.Paid_at?.ToString("MMM dd, yyyy hh:mm tt") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 text-right">
+                <a href="@Url.Action("Supernav", "SuperAdmin", new { section = "sales" })" class="text-xs font-semibold no-underline" style="color: #088395;">View all income →</a>
+            </div>
+        }
+        else
+        {
+            <p class="text-sm text-gray-400 text-center py-4">No payments yet. Revenue will appear here when organizations subscribe.</p>
+        }
+    </div>
+
+    <!-- Quick Access -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h3 class="text-lg font-bold mb-5" style="color: #09637E;">Quick Access</h3>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            @{
+                var quickItems = new[] {
+                    ("dashboard", "Overview"),
+                    ("reports", "Reports"),
+                    ("subscriptions", "Subscriptions"),
+                    ("sales", "Sales & Income"),
+                    ("users", "Users")
+                };
+            }
+            @foreach (var (key, label) in quickItems)
+            {
+                <a href="@Url.Action("Supernav", "SuperAdmin", new { section = key })"
+                   class="group border-2 border-gray-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer"
+                   style="--hover-border: #088395;"
+                   onmouseover="this.style.borderColor='#088395'" onmouseout="this.style.borderColor=''">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform" style="background: #EBF4F6; color: #088395;">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-xs font-bold" style="color: #09637E;">@label</h4>
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Audit Logs -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Recent Activity</h3>
+                    <p class="text-xs text-gray-400">@totalAuditLogs total · @todayAuditLogs today</p>
+                </div>
+            </div>
+            @if (recentLogs.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var log in recentLogs)
+                    {
+                        <div class="flex items-start gap-3 py-2">
+                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background: #EBF4F6; color: #088395;">
+                                @(log.PerformedByUser?.Full_name?.Substring(0, Math.Min(2, log.PerformedByUser?.Full_name?.Length ?? 0)).ToUpper() ?? "??")
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-gray-800">
+                                    <span class="font-semibold">@(log.PerformedByUser?.Full_name ?? "Unknown")</span>
+                                    <span class="text-gray-500"> — @log.Action</span>
+                                </p>
+                                <p class="text-xs text-gray-400 truncate">@(log.Details ?? log.EntityName ?? "—")</p>
+                                <p class="text-xs text-gray-300 mt-0.5">@log.Performed_at.ToString("MMM dd, yyyy hh:mm tt")</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No recent activity.</p>
+            }
+        </div>
+
+        <!-- Recent Users -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #09637E;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Newest Users</h3>
+                    <p class="text-xs text-gray-400">Most recently registered accounts</p>
+                </div>
+            </div>
+            @if (recentUsers.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var u in recentUsers)
+                    {
+                        var statusColor = u.Account_status == "Active" ? "text-green-600 bg-green-50" : "text-red-500 bg-red-50";
+                        <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background: #EBF4F6; color: #088395;">
+                                    @u.Full_name.Substring(0, Math.Min(2, u.Full_name.Length)).ToUpper()
+                                </span>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-800">@u.Full_name</p>
+                                    <p class="text-xs text-gray-400">@(u.Role?.RoleName ?? "—") · @(u.Organization?.OrganizationName ?? "—")</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full @statusColor">@u.Account_status</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No users yet.</p>
+            }
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Data Pipeline Health</h3>
+                <p class="text-xs text-gray-400">Overall data quality and processing metrics</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600 font-medium">Valid Rows</span>
+                    <span class="text-gray-800 font-semibold">@validRows.ToString("N0")</span>
+                </div>
+                <div class="w-full rounded-full h-2.5" style="background: #EBF4F6;">
+                    <div class="h-2.5 rounded-full" style="background: #088395; width: @(totalStagingRows > 0 ? validRows * 100 / totalStagingRows : 0)%;"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600 font-medium">Error Rows</span>
+                    <span class="text-gray-800 font-semibold">@errorRows.ToString("N0")</span>
+                </div>
+                <div class="w-full rounded-full h-2.5" style="background: #EBF4F6;">
+                    <div class="bg-red-500 h-2.5 rounded-full" style="width: @(totalStagingRows > 0 ? errorRows * 100 / totalStagingRows : 0)%;"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600 font-medium">Overall Quality</span>
+                    <span class="text-gray-800 font-semibold">@successRate%</span>
+                </div>
+                <div class="w-full rounded-full h-2.5" style="background: #EBF4F6;">
+                    <div class="h-2.5 rounded-full" style="background: #7AB2B2; width: @(successRate)%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

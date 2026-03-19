@@ -1,0 +1,101 @@
+@using it15_webproject_mvc.Models
+@{
+    var users = ViewData["AllUsers"] as List<User> ?? new List<User>();
+    var totalUsers = (int)(ViewData["TotalUsers"] ?? 0);
+    var activeUsers = (int)(ViewData["ActiveUsers"] ?? 0);
+    var inactiveUsers = (int)(ViewData["InactiveUsers"] ?? 0);
+    var todayLogins = (int)(ViewData["TodayLogins"] ?? 0);
+    var roles = ViewData["AllRoles"] as List<Role> ?? new List<Role>();
+    var organizations = ViewData["AllOrganizations"] as List<Organization> ?? new List<Organization>();
+}
+
+<div class="py-6 min-h-full">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #09637E;">@totalUsers</p>
+            <p class="text-xs text-gray-400 mt-1">Total Users</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #088395;">@activeUsers</p>
+            <p class="text-xs text-gray-400 mt-1">Active</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold text-red-500">@inactiveUsers</p>
+            <p class="text-xs text-gray-400 mt-1">Inactive / Suspended</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #7AB2B2;">@todayLogins</p>
+            <p class="text-xs text-gray-400 mt-1">Logged In Today</p>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #09637E;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">All Platform Users</h3>
+                <p class="text-xs text-gray-400">@totalUsers user(s) across all organizations and roles</p>
+            </div>
+        </div>
+
+        @if (users.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #EBF4F6;">
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">User</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Email</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Role</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Organization</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Last Login</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in users)
+                        {
+                            var statusBg = u.Account_status == "Active" ? "text-green-600 bg-green-50" :
+                                           u.Account_status == "Suspended" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background: #EBF4F6; color: #088395;">
+                                            @u.Full_name.Substring(0, Math.Min(2, u.Full_name.Length)).ToUpper()
+                                        </span>
+                                        <span class="font-semibold text-gray-800">@u.Full_name</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-gray-500">@u.Email</td>
+                                <td class="py-3 px-4">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full" style="background: #EBF4F6; color: #09637E;">@(u.Role?.RoleName ?? "—")</span>
+                                </td>
+                                <td class="py-3 px-4 text-gray-600">@(u.Organization?.OrganizationName ?? "—")</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@(u.Last_login?.ToString("MMM dd, yyyy hh:mm tt") ?? "Never")</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @statusBg">@u.Account_status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4" style="color: #7AB2B2;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <p class="text-sm font-medium">No users found</p>
+            </div>
+        }
+    </div>
+</div>

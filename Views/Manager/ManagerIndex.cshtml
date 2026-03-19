@@ -1,0 +1,177 @@
+@using it15_webproject_mvc.Models
+@{
+    var totalSources = (int)(ViewData["TotalSources"] ?? 0);
+    var activeSources = (int)(ViewData["ActiveSources"] ?? 0);
+    var totalSubmissions = (int)(ViewData["TotalSubmissions"] ?? 0);
+    var pendingApprovals = (int)(ViewData["PendingApprovals"] ?? 0);
+    var integratedCount = (int)(ViewData["IntegratedCount"] ?? 0);
+    var failedCount = (int)(ViewData["FailedCount"] ?? 0);
+    var totalAuditLogs = (int)(ViewData["TotalAuditLogs"] ?? 0);
+    var todayAuditLogs = (int)(ViewData["TodayAuditLogs"] ?? 0);
+    var recentLogs = ViewData["RecentLogs"] as List<AuditLog> ?? new List<AuditLog>();
+    var pendingList = ViewData["PendingList"] as List<DataSubmission> ?? new List<DataSubmission>();
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <h2 class="text-xl font-bold" style="color: #09637E;">Manager Dashboard</h2>
+        <p class="text-sm text-gray-500 mt-1 mb-6">Oversight of data warehouse operations — submissions, performance, and approvals.</p>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@pendingApprovals</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Pending Approvals</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #09637E, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@integratedCount</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Integrated</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #7AB2B2, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalSubmissions</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Total Submissions</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="rounded-2xl p-5 text-white" style="background: linear-gradient(135deg, #09637E, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalAuditLogs</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Audit Logs</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@todayAuditLogs today</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <h3 class="text-lg font-bold mb-5" style="color: #09637E;">Quick Access</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            @{
+                var quickItems = new[] {
+                    ("viewdata", "View Data", "bg-opacity-100", "group-hover:bg-opacity-100"),
+                    ("reports", "Reports", "bg-opacity-100", "group-hover:bg-opacity-100"),
+                    ("history", "History", "bg-opacity-100", "group-hover:bg-opacity-100"),
+                    ("export", "Export", "bg-opacity-100", "group-hover:bg-opacity-100"),
+                    ("performance", "Performance", "bg-opacity-100", "group-hover:bg-opacity-100"),
+                    ("approvals", "Approvals", "bg-opacity-100", "group-hover:bg-opacity-100")
+                };
+            }
+            @foreach (var (key, label, bgColor, hoverBg) in quickItems)
+            {
+                <a href="@Url.Action("ManagerNav", "Manager", new { section = key })"
+                   class="group border-2 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="border-color: #7AB2B2;">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:text-white transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-xs font-bold text-gray-900">@label</h4>
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Pending Approvals -->
+        <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Pending Approvals</h3>
+                    <p class="text-xs text-gray-400">Submissions awaiting your review</p>
+                </div>
+            </div>
+            @if (pendingList.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var sub in pendingList)
+                    {
+                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">@(sub.DataSource?.SourceName ?? "—")</p>
+                                <p class="text-xs text-gray-400">@sub.BatchId · @sub.ValidRows/@sub.TotalRows rows</p>
+                            </div>
+                            <a href="@Url.Action("ManagerNav", "Manager", new { section = "approvals" })"
+                               class="text-xs font-semibold no-underline" style="color: #088395;">Review ?</a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No pending approvals.</p>
+            }
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Recent Activity</h3>
+                    <p class="text-xs text-gray-400">Latest audit log entries</p>
+                </div>
+            </div>
+            @if (recentLogs.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var log in recentLogs)
+                    {
+                        <div class="flex items-start gap-3 py-2">
+                            <span class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                @(log.PerformedByUser?.Full_name?.Substring(0, Math.Min(2, log.PerformedByUser?.Full_name?.Length ?? 0)).ToUpper() ?? "??")
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-gray-800">
+                                    <span class="font-semibold">@(log.PerformedByUser?.Full_name ?? "Unknown")</span>
+                                    <span class="text-gray-500"> — @log.Action</span>
+                                </p>
+                                <p class="text-xs text-gray-400 truncate">@(log.Details ?? log.EntityName ?? "—")</p>
+                                <p class="text-xs text-gray-300 mt-0.5">@log.Performed_at.ToString("MMM dd, yyyy hh:mm tt")</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No recent activity.</p>
+            }
+        </div>
+    </div>
+</div>

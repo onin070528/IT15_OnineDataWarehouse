@@ -1,0 +1,251 @@
+﻿@{
+    ViewData["Title"] = "Register";
+    var e = Context.Request.Query["error"].ToString();
+    var s = Context.Request.Query["success"].ToString();
+    string? ErrorMessage = null;
+    string? SuccessMessage = null;
+
+    if (!string.IsNullOrEmpty(e))
+    {
+        if (string.Equals(e, "missing", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "All fields are required.";
+        else if (string.Equals(e, "password_mismatch", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Passwords do not match.";
+        else if (string.Equals(e, "username_taken", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Username is already taken.";
+        else if (string.Equals(e, "email_taken", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Email is already registered.";
+        else
+            ErrorMessage = e;
+    }
+
+    if (!string.IsNullOrEmpty(s))
+    {
+        SuccessMessage = "Account created successfully! You can now sign in.";
+    }
+}
+
+<div class="min-h-screen flex font-[Inter] bg-white">
+
+    <!-- LEFT PANEL -->
+    <div class="hidden lg:flex flex-1 relative bg-gradient-to-br from-[#7AB2B2] to-[#088395] text-white items-center justify-center p-10 overflow-hidden">
+
+        <!-- Decorative Squares -->
+        <div class="absolute w-52 h-52 bg-white/10 rotate-45 -top-16 -left-10 rounded-xl"></div>
+        <div class="absolute w-72 h-72 bg-white/10 rotate-45 -bottom-20 -right-16 rounded-xl"></div>
+        <div class="absolute w-16 h-16 bg-white/10 rotate-45 top-1/4 left-1/4 rounded-lg"></div>
+        <div class="absolute w-20 h-20 bg-white/10 rotate-45 bottom-1/4 right-1/4 rounded-lg"></div>
+
+        <div class="relative text-center max-w-md">
+            <img src="@Url.Content("~/image/neyo .png")" class="w-72 mx-auto mb-8 rounded-xl shadow-2xl" alt="Neyo logo" />
+            <h2 class="text-3xl font-bold mb-4">
+                Start managing your data warehouse today.
+            </h2>
+            <p class="text-white/80 leading-relaxed">
+                Register your company to gain full access to ETL pipelines, API integrations, and real-time data analytics.
+            </p>
+
+            <!-- How it works -->
+            <div class="mt-10 text-left space-y-4">
+                <div class="flex items-center gap-4">
+                    <span class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
+                    <div>
+                        <p class="text-sm font-semibold">Register your company</p>
+                        <p class="text-xs text-white/60">You become the admin of your organization</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
+                    <div>
+                        <p class="text-sm font-semibold">Configure API sources</p>
+                        <p class="text-xs text-white/60">Connect your company systems to the warehouse</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
+                    <div>
+                        <p class="text-sm font-semibold">Pull, verify, and submit data</p>
+                        <p class="text-xs text-white/60">Your staff manages the data pipeline</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute -bottom-24 left-0 right-0 text-sm text-white/50">
+                &copy; 2026 Neyo System. All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="flex flex-1 items-center justify-center p-8">
+        <div class="w-full max-w-md">
+
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                    Create your account
+                </h3>
+                <p class="text-gray-500 text-sm">
+                    Register your company to start using the data warehouse.
+                </p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 shadow-sm">
+                    <span class="text-lg">&#9888;</span>
+                    <div>@ErrorMessage</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm">
+                    <span class="text-lg">&#10003;</span>
+                    <div>@SuccessMessage</div>
+                </div>
+            }
+
+            <form method="post" action="/auth/register" class="space-y-5">
+                @Html.AntiForgeryToken()
+
+                <!-- Company Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Company Name <span class="text-red-500">*</span>
+                    </label>
+                    <input name="companyName"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                           placeholder="Enter your company name"
+                           required />
+                </div>
+
+                <!-- Full Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name <span class="text-red-500">*</span>
+                    </label>
+                    <input name="fullName"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                           placeholder="Enter your full name"
+                           maxlength="25"
+                           required />
+                </div>
+
+                <!-- Username -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Username <span class="text-red-500">*</span>
+                    </label>
+                    <input name="username"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                           placeholder="Choose a username"
+                           maxlength="15"
+                           required />
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Email <span class="text-red-500">*</span>
+                    </label>
+                    <input name="email"
+                           type="email"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                           placeholder="Enter your email address"
+                           maxlength="30"
+                           required />
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Password <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input id="passwordInput"
+                               name="password"
+                               type="password"
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                               placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                               minlength="12"
+                               pattern="^(?=.*[^a-zA-Z0-9]).{12,}$"
+                               title="Password must be at least 12 characters and contain at least one special character."
+                               required />
+                        <p class="text-xs text-gray-400 mt-1">Minimum 12 characters with at least one special character (e.g. !&#64;#$%)</p>
+                        <button type="button"
+                                onclick="togglePassword('passwordInput')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            &#128065;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Confirm Password <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input id="confirmPasswordInput"
+                               name="confirmPassword"
+                               type="password"
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                               placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                               minlength="12"
+                               pattern="^(?=.*[^a-zA-Z0-9]).{12,}$"
+                               title="Password must be at least 12 characters and contain at least one special character."
+                               required />
+                        <button type="button"
+                                onclick="togglePassword('confirmPasswordInput')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            &#128065;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Role Badge (informational) -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-semibold text-purple-800">You will be assigned as <span class="text-purple-600">User Admin</span></p>
+                            <p class="text-xs text-purple-500">You can manage users, roles, and subscriptions for your company</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Button -->
+                <button type="submit"
+                        class="w-full py-3 rounded-lg bg-gradient-to-r from-[#7AB2B2] to-[#088395] text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition">
+                    Create Account &rarr;
+                </button>
+
+                <!-- Divider -->
+                <div class="flex items-center my-4 text-gray-400 text-sm">
+                    <div class="flex-1 border-b"></div>
+                    <span class="px-3">already registered?</span>
+                    <div class="flex-1 border-b"></div>
+                </div>
+
+                <div class="text-center text-sm text-gray-500">
+                    Already have an account?
+                    <a href="@Url.Action("Login", "Home")" class="text-[#088395] hover:underline font-semibold">
+                        Sign in
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        input.type = input.type === "password" ? "text" : "password";
+    }
+</script>

@@ -1,0 +1,236 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="min-h-screen bg-white">
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16 relative">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold text-gray-900">Neyo System</span>
+            </div>
+            <!-- Mobile toggle -->
+            <button class="home-mobile-toggle items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100" style="display:none;" onclick="document.getElementById('homeNavLinks').classList.toggle('open')">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div id="homeNavLinks" class="home-nav-links flex items-center gap-3">
+                <a asp-controller="Home" asp-action="Login"
+                   class="px-5 py-2 text-sm font-semibold rounded-lg no-underline transition-colors" style="color: #088395;" onmouseover="this.style.backgroundColor='#EBF4F6'" onmouseout="this.style.backgroundColor=''">
+                    Sign In
+                </a>
+                <a asp-controller="Home" asp-action="Register"
+                   class="px-5 py-2 text-sm font-semibold text-white rounded-lg no-underline transition-all hover:shadow-lg hover:-translate-y-0.5" style="background: linear-gradient(135deg, #088395, #09637E);">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="relative pt-24 sm:pt-32 pb-14 sm:pb-20 overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(122,178,178,0.15), transparent);"></div>
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-8" style="background-color: #EBF4F6; color: #088395;">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Data Warehouse Administration Platform
+            </div>
+            <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+                Manage Your Data<br/>
+                <span style="color: #088395;">With Confidence</span>
+            </h1>
+            <p class="text-lg text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+                Secure, fast, and reliable data warehousing — ETL pipelines, API integrations,
+                real-time validation, and multi-role access control all in one place.
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a asp-controller="Home" asp-action="Register"
+                   class="px-8 py-3.5 text-white font-semibold rounded-xl no-underline shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5" style="background: linear-gradient(135deg, #088395, #09637E);">
+                    Start Free &rarr;
+                </a>
+                <a asp-controller="Home" asp-action="Login"
+                   class="px-8 py-3.5 font-semibold rounded-xl no-underline border-2 transition-all hover:-translate-y-0.5" style="border-color: #7AB2B2; color: #088395;" onmouseover="this.style.backgroundColor='#EBF4F6'" onmouseout="this.style.backgroundColor=''">
+                    Sign In
+                </a>
+            </div>
+
+            <!-- Trust Badges -->
+            <div class="flex flex-wrap items-center justify-center gap-8 mt-14 text-xs text-gray-400">
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    Secure Auth
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Real-Time ETL
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Multi-Role Access
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Smart Reports
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="py-14 sm:py-20" style="background-color: #f8fafb;">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-14">
+                <h2 class="text-3xl font-bold text-gray-900 mb-3">Everything You Need</h2>
+                <p class="text-gray-500 max-w-xl mx-auto">A complete data warehouse management system built for teams of all sizes.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @{
+                    var features = new[] {
+                        ("M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
+                         "API Data Sources", "Connect any REST API. Pull data automatically with configurable endpoints, authentication, and scheduling."),
+                        ("M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
+                         "ETL Pipeline", "Extract, Transform, Load — validate, cleanse, and submit data through a multi-stage pipeline with full audit trail."),
+                        ("M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+                         "Data Validation", "Automatic field-level validation against schema rules. Correct errors inline before submission."),
+                        ("M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+                         "Role-Based Access", "5 distinct roles — SuperAdmin, UserAdmin, Staff, Manager, and Data Analyst — each with granular permissions."),
+                        ("M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+                         "Reports & Analytics", "Real-time dashboards, submission metrics, team performance, and data quality insights at a glance."),
+                        ("M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4",
+                         "Centralized Storage", "All approved data lands in a versioned warehouse with historical snapshots, archiving, and rollback support.")
+                    };
+                }
+                @foreach (var (icon, title, desc) in features)
+                {
+                    <div class="bg-white rounded-2xl p-7 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all group">
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="@icon"/></svg>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 mb-2">@title</h3>
+                        <p class="text-sm text-gray-500 leading-relaxed">@desc</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="py-14 sm:py-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-14">
+                <h2 class="text-3xl font-bold text-gray-900 mb-3">How It Works</h2>
+                <p class="text-gray-500">From registration to warehouse — in four simple steps.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                @{
+                    var steps = new[] {
+                        ("1", "Register", "Create your organization and get your UserAdmin account instantly."),
+                        ("2", "Connect", "Add your API data sources with endpoints, keys, and field mapping."),
+                        ("3", "Process", "Pull data, validate, cleanse, and submit through the ETL pipeline."),
+                        ("4", "Integrate", "Manager approves and data lands in the warehouse — versioned and audited.")
+                    };
+                }
+                @foreach (var (num, title, desc) in steps)
+                {
+                    <div class="text-center">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-4 shadow-lg" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                            @num
+                        </div>
+                        <h4 class="font-bold text-gray-900 mb-2">@title</h4>
+                        <p class="text-sm text-gray-500 leading-relaxed">@desc</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- PLANS PREVIEW -->
+    <section class="py-14 sm:py-20" style="background-color: #f8fafb;">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-14">
+                <h2 class="text-3xl font-bold text-gray-900 mb-3">Simple Pricing</h2>
+                <p class="text-gray-500">Start free. Upgrade when you're ready.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="bg-white rounded-2xl p-7 border border-gray-200 text-center">
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Free</p>
+                    <p class="text-4xl font-extrabold text-gray-900 mb-1">₱0</p>
+                    <p class="text-xs text-gray-400 mb-5">Forever</p>
+                    <ul class="text-sm text-gray-600 space-y-2 mb-6 text-left">
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> Up to 3 users</li>
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> 1 API source</li>
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> Basic dashboard</li>
+                    </ul>
+                    <a asp-controller="Home" asp-action="Register"
+                       class="block w-full py-2.5 rounded-lg border-2 text-sm font-semibold no-underline transition" style="border-color: #7AB2B2; color: #088395;" onmouseover="this.style.backgroundColor='#EBF4F6'" onmouseout="this.style.backgroundColor=''">
+                        Get Started
+                    </a>
+                </div>
+                <div class="bg-white rounded-2xl p-7 border-2 text-center relative shadow-lg" style="border-color: #088395;">
+                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white rounded-full" style="background: #088395;">Popular</span>
+                    <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color: #088395;">Basic</p>
+                    <p class="text-4xl font-extrabold text-gray-900 mb-1">₱150</p>
+                    <p class="text-xs text-gray-400 mb-5">/month</p>
+                    <ul class="text-sm text-gray-600 space-y-2 mb-6 text-left">
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> Up to 10 users</li>
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> 3 API sources</li>
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> Manager role</li>
+                        <li class="flex items-center gap-2"><span class="text-green-500 text-xs">✓</span> ETL pipeline</li>
+                    </ul>
+                    <a asp-controller="Home" asp-action="Register"
+                       class="block w-full py-2.5 rounded-lg text-sm font-semibold text-white no-underline transition hover:shadow-lg" style="background: #088395;">
+                        Get Started
+                    </a>
+                </div>
+                <div class="rounded-2xl p-7 text-center text-white relative" style="background: linear-gradient(135deg, #088395, #09637E);">
+                    <p class="text-xs font-bold uppercase tracking-wider mb-2 text-white/70">Premium</p>
+                    <p class="text-4xl font-extrabold mb-1">₱500</p>
+                    <p class="text-xs text-white/50 mb-5">/month</p>
+                    <ul class="text-sm text-white/80 space-y-2 mb-6 text-left">
+                        <li class="flex items-center gap-2"><span class="text-white/60 text-xs">✓</span> Unlimited users</li>
+                        <li class="flex items-center gap-2"><span class="text-white/60 text-xs">✓</span> Unlimited sources</li>
+                        <li class="flex items-center gap-2"><span class="text-white/60 text-xs">✓</span> All roles</li>
+                        <li class="flex items-center gap-2"><span class="text-white/60 text-xs">✓</span> Full warehouse</li>
+                    </ul>
+                    <a asp-controller="Home" asp-action="Register"
+                       class="block w-full py-2.5 rounded-lg text-sm font-semibold no-underline transition hover:bg-amber-400 hover:text-gray-900" style="background: white; color: #088395;">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-14 sm:py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Ready to Get Started?</h2>
+            <p class="text-gray-500 mb-8">Register your organization now and start managing your data warehouse in minutes.</p>
+            <a asp-controller="Home" asp-action="Register"
+               class="inline-block px-10 py-4 text-white font-bold rounded-xl no-underline shadow-xl transition-all hover:shadow-2xl hover:-translate-y-1" style="background: linear-gradient(135deg, #088395, #09637E);">
+                Create Free Account &rarr;
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-100 py-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded flex items-center justify-center" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-semibold text-gray-700">Neyo System</span>
+            </div>
+            <p class="text-xs text-gray-400">&copy; 2026 Neyo System. All rights reserved.</p>
+        </div>
+    </footer>
+
+</div>

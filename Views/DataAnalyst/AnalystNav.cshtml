@@ -1,0 +1,159 @@
+@using System.Security.Claims
+@{
+    var orgName = ViewData["OrganizationName"] as string ?? "My Company";
+    ViewData["Title"] = orgName + " - Data Warehouse";
+    var section = (ViewData["Section"] as string ?? "dashboard").ToLower();
+    var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "DataAnalyst";
+}
+
+<div class="flex min-h-screen" style="background-color: #EBF4F6;">
+
+<!-- MOBILE OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="app-sidebar w-60 bg-white border-r flex flex-col justify-between fixed top-0 left-0 h-full z-40" id="appSidebar" style="border-color: #7AB2B2;">
+    <div>
+        <div class="px-6 py-5 border-b" style="border-color: #EBF4F6;">
+            <div class="flex items-center gap-2">
+                <span class="text-lg font-bold truncate" style="color: #09637E;" title="@orgName">@orgName</span>
+            </div>
+        </div>
+
+            <!-- Navigation Links -->
+            <nav class="mt-6 px-4 space-y-1">
+                <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "dashboard" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors"
+                   style="@(section == "dashboard" ? "background-color: #EBF4F6; color: #09637E;" : "color: #6b7280;")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "security" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors"
+                   style="@(section == "security" ? "background-color: #EBF4F6; color: #09637E;" : "color: #6b7280;")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    Security
+                </a>
+                <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "etl" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors"
+                   style="@(section == "etl" ? "background-color: #EBF4F6; color: #09637E;" : "color: #6b7280;")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    ETL Oversight
+                </a>
+                <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "warehouse" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors"
+                   style="@(section == "warehouse" ? "background-color: #EBF4F6; color: #09637E;" : "color: #6b7280;")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                    </svg>
+                    Warehouse Query
+                </a>
+                <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "cleansing" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors"
+                   style="@(section == "cleansing" ? "background-color: #EBF4F6; color: #09637E;" : "color: #6b7280;")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Data Quality
+                </a>
+                <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "history" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors"
+                   style="@(section == "history" ? "background-color: #EBF4F6; color: #09637E;" : "color: #6b7280;")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Historical Data
+                </a>
+            </nav>
+
+        </div>
+
+        <!-- User Profile + Logout -->
+        <div class="px-4 pb-5">
+            <hr class="mb-4 border-gray-200" />
+            <div class="flex items-center gap-3 px-2 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-xs font-bold flex-shrink-0" style="background-color: #088395;">
+                    @(User.Identity?.Name?.Substring(0, Math.Min(2, User.Identity?.Name?.Length ?? 0)).ToUpper() ?? "DA")
+                </span>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-semibold text-gray-800 truncate">@User.Identity?.Name</p>
+                    <p class="text-xs text-gray-400 truncate">@userRole</p>
+                </div>
+            </div>
+            <a href="/auth/logout"
+               class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors no-underline">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="app-main flex-1 ml-60">
+        <!-- Top Bar -->
+        <header class="bg-white px-4 md:px-8 py-4 md:py-5 flex items-center justify-between sticky top-0 z-30" style="border-bottom: 1px solid #7AB2B2;">
+            <!-- Mobile hamburger -->
+            <button class="mobile-menu-btn items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100 mr-3" onclick="toggleSidebar()" style="display:none;">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 class="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                @(section switch
+                {
+                    "security" => "Security Management",
+                    "etl" => "ETL Oversight",
+                    "warehouse" => "Warehouse Query & Analysis",
+                    "cleansing" => "Data Quality & Cleansing",
+                    "history" => "Historical Data & Trends",
+                    _ => "Dashboard"
+                })
+            </h1>
+            <div class="flex items-center gap-3">
+                <partial name="_NotificationBell" />
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="p-0">
+            @if (section == "security")
+            {
+                <partial name="AnalystSecurity" />
+            }
+            else if (section == "etl")
+            {
+                <partial name="AnalystETL" />
+            }
+            else if (section == "warehouse")
+            {
+                <partial name="AnalystWarehouse" />
+            }
+            else if (section == "cleansing")
+            {
+                <partial name="AnalystCleansing" />
+            }
+            else if (section == "history")
+            {
+                <partial name="AnalystHistory" />
+            }
+            else
+            {
+                <partial name="AnalystIndex" />
+            }
+        </main>
+    </div>
+
+</div>
+
+<script>
+    function toggleSidebar() {
+        document.getElementById('appSidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+</script>

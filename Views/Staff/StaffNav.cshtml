@@ -1,0 +1,175 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Staff Portal - Data Warehouse";
+    var section = (ViewData["Section"] as string ?? "dashboard").ToLower();
+    var orgName = ViewData["OrganizationName"] as string ?? "My Company";
+    var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Staff";
+    ViewData["Title"] = orgName + " - Data Warehouse";
+}
+
+<div class="flex min-h-screen bg-gray-100">
+
+<!-- MOBILE OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="app-sidebar w-60 bg-white border-r border-gray-200 flex flex-col justify-between fixed top-0 left-0 h-full z-40" id="appSidebar">
+        <!-- Logo -->
+        <div>
+            <div class="px-6 py-5 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg font-bold truncate" style="color: #088395;" title="@orgName">@orgName</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="mt-6 px-4 space-y-1">
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "dashboard" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "dashboard" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "dashboard" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "sources" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "sources" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "sources" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    API Sources
+                </a>
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "upload" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "upload" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "upload" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Upload Data
+                </a>
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "verify" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "verify" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "verify" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Verify Data
+                </a>
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "submit" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "submit" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "submit" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    Submit for Integration
+                </a>
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "reports" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "reports" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "reports" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Reports
+                </a>
+                <a href="@Url.Action("StaffNav", "Staff", new { section = "history" })"
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium no-underline transition-colors
+                       @(section == "history" ? "text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800")" style="@(section == "history" ? "background-color: #EBF4F6;" : "")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    History
+                </a>
+            </nav>
+
+
+        </div>
+
+        <!-- User Profile + Logout -->
+        <div class="px-4 pb-5">
+            <hr class="mb-4 border-gray-200" />
+            <div class="flex items-center gap-3 px-2 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-xs font-bold flex-shrink-0" style="background-color: #088395;">
+                    @(User.Identity?.Name?.Substring(0, Math.Min(2, User.Identity?.Name?.Length ?? 0)).ToUpper() ?? "ST")
+                </span>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-semibold text-gray-800 truncate">@User.Identity?.Name</p>
+                    <p class="text-xs text-gray-400 truncate">@userRole</p>
+                </div>
+            </div>
+            <a href="/auth/logout"
+               class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors no-underline">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="app-main flex-1 ml-60">
+        <!-- Top Bar -->
+        <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 md:py-5 flex items-center justify-between sticky top-0 z-30">
+            <!-- Mobile hamburger -->
+            <button class="mobile-menu-btn items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-gray-100 mr-3" onclick="toggleSidebar()" style="display:none;">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 class="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                @(section switch
+                {
+                    "sources" => "API Sources",
+                    "upload" => "Upload Data",
+                    "verify" => "Verify Data",
+                    "submit" => "Submit for Integration",
+                    "reports" => "Reports",
+                    "history" => "History & Audit Log",
+                    _ => "Dashboard"
+                })
+            </h1>
+            <div class="flex items-center gap-3">
+                <partial name="_NotificationBell" />
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="p-0">
+            @if (section == "sources")
+            {
+                <partial name="StaffApiSources" />
+            }
+            else if (section == "upload")
+            {
+                <partial name="StaffUpload" />
+            }
+            else if (section == "verify")
+            {
+                <partial name="StaffVerify" />
+            }
+            else if (section == "submit")
+            {
+                <partial name="StaffSubmit" />
+            }
+            else if (section == "reports")
+            {
+                <partial name="StaffReports" />
+            }
+            else if (section == "history")
+            {
+                <partial name="StaffHistory" />
+            }
+            else
+            {
+                <partial name="StaffIndex" />
+            }
+        </main>
+    </div>
+
+</div>
+
+<script>
+    function toggleSidebar() {
+        document.getElementById('appSidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+</script>

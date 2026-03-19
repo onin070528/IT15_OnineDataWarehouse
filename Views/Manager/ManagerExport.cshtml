@@ -1,0 +1,117 @@
+@using it15_webproject_mvc.Models
+@{
+    var submissions = ViewData["ExportableSubmissions"] as List<DataSubmission> ?? new List<DataSubmission>();
+    var totalExportable = (int)(ViewData["TotalExportable"] ?? 0);
+    var totalExportableRows = (int)(ViewData["TotalExportableRows"] ?? 0);
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@totalExportable</p>
+                    <p class="text-xs text-gray-400">Exportable Submissions</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@totalExportableRows.ToString("N0")</p>
+                    <p class="text-xs text-gray-400">Total Exportable Rows</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="rounded-2xl px-6 py-4 mb-8" style="background-color: #EBF4F6; border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: white; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </span>
+            <div>
+                <p class="text-sm font-semibold" style="color: #09637E;">Export Guide</p>
+                <p class="text-xs" style="color: #088395;">Only integrated and submitted submissions are shown here. Use the export button to download data as CSV.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exportable Submissions Table -->
+    <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Available for Export</h3>
+                <p class="text-sm text-gray-500">Submissions with integrated or submitted status</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Batch ID</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target Table</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Rows</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Mode</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Date</th>
+                        <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                        <th class="text-center py-3 px-4 text-gray-500 font-semibold">Export</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (submissions.Any())
+                    {
+                        @foreach (var sub in submissions)
+                        {
+                            var color = sub.Status == "Integrated" ? "text-green-600 bg-green-50" : "text-amber-600 bg-amber-50";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@sub.BatchId</td>
+                                <td class="py-3 px-4 text-gray-600">@(sub.DataSource?.SourceName ?? "—")</td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-500">@sub.TargetTable</td>
+                                <td class="py-3 px-4 text-gray-600"><span class="text-green-600 font-semibold">@sub.ValidRows</span>/@sub.TotalRows</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@sub.LoadMode</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@sub.Created_at.ToString("MMM dd, yyyy")</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs font-medium px-2.5 py-1 rounded-full @color">@sub.Status</span></td>
+                                <td class="py-3 px-4 text-center">
+                                    <button class="px-3 py-1.5 text-white text-xs font-semibold rounded-lg transition-colors" style="background-color: #088395;"
+                                            title="Export as CSV">
+                                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        CSV
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="8" class="py-8 text-center text-gray-400 text-sm">No exportable submissions available.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

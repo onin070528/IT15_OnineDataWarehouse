@@ -1,0 +1,193 @@
+﻿@using it15_webproject_mvc.Models
+@{
+    var totalSources = (int)(ViewData["TotalSources"] ?? 0);
+    var activeSources = (int)(ViewData["ActiveSources"] ?? 0);
+    var totalSubmissions = (int)(ViewData["TotalSubmissions"] ?? 0);
+    var integratedCount = (int)(ViewData["IntegratedCount"] ?? 0);
+    var pendingCount = (int)(ViewData["PendingCount"] ?? 0);
+    var failedCount = (int)(ViewData["FailedCount"] ?? 0);
+    var totalStagingRows = (int)(ViewData["TotalStagingRows"] ?? 0);
+    var validRows = (int)(ViewData["ValidRows"] ?? 0);
+    var errorRows = (int)(ViewData["ErrorRows"] ?? 0);
+    var totalAuditLogs = (int)(ViewData["TotalAuditLogs"] ?? 0);
+    var recentLogs = ViewData["RecentLogs"] as List<AuditLog> ?? new List<AuditLog>();
+    var recentSubmissions = ViewData["RecentSubmissions"] as List<DataSubmission> ?? new List<DataSubmission>();
+}
+
+<div class="p-4 md:p-8 bg-gray-100 min-h-full">
+
+    <!-- DATA WAREHOUSE OVERVIEW -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 class="text-xl font-bold text-gray-900">Data Warehouse Overview</h2>
+        <p class="text-sm text-gray-500 mt-1 mb-6">Real-time metrics for your organization's ETL and storage systems.</p>
+
+        <!-- KPI Cards Row 1 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
+
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #09637E, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalSources</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Data Sources</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@activeSources active</p>
+            </div>
+
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalSubmissions</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">ETL Submissions</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@integratedCount integrated · @pendingCount pending</p>
+            </div>
+
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #7AB2B2, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalStagingRows.ToString("N0")</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Staging Rows</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@validRows valid · @errorRows errors</p>
+            </div>
+
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #09637E, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalAuditLogs</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Audit Log Entries</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WELCOME CARD -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h3 class="text-lg font-bold text-gray-900">Welcome to the Data Warehouse Dashboard</h3>
+        <p class="text-sm text-gray-500 mt-2">
+            Monitor data sources, ETL submissions, data quality, and audit history for your organization. Use the sidebar to explore each module in detail.
+        </p>
+    </div>
+
+    <!-- RECENT SUBMISSIONS + RECENT ACTIVITY -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Recent Submissions -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Recent Submissions</h3>
+                <a href="@Url.Action("UserNav", "UserAdmin", new { section = "etl" })" class="text-xs font-semibold no-underline" style="color: #088395;">View All →</a>
+            </div>
+            @if (recentSubmissions.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var sub in recentSubmissions)
+                    {
+                        var statusBg = sub.Status == "Integrated" ? "text-green-600 bg-green-50" :
+                                       sub.Status == "Submitted" ? "text-blue-600 bg-blue-50" :
+                                       sub.Status == "Failed" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100";
+                        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">@(sub.DataSource?.SourceName ?? sub.BatchId)</p>
+                                <p class="text-xs text-gray-400">@sub.ValidRows/@sub.TotalRows rows · @sub.Created_at.ToString("MMM dd, yyyy")</p>
+                            </div>
+                            <span class="text-xs font-medium px-2.5 py-1 rounded-full @statusBg">@sub.Status</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No submissions yet</p>
+            }
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Recent Activity</h3>
+                <a href="@Url.Action("UserNav", "UserAdmin", new { section = "logs" })" class="text-xs font-semibold no-underline" style="color: #088395;">View All →</a>
+            </div>
+            @if (recentLogs.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var log in recentLogs)
+                    {
+                        <div class="flex items-start gap-3 py-2 border-b border-gray-50">
+                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background-color: #EBF4F6; color: #088395;">
+                                @(log.PerformedByUser?.Full_name?.Substring(0, Math.Min(2, log.PerformedByUser?.Full_name?.Length ?? 0)).ToUpper() ?? "SY")
+                            </span>
+                            <div class="overflow-hidden">
+                                <p class="text-sm font-semibold text-gray-800 truncate">@log.Action</p>
+                                <p class="text-xs text-gray-400 truncate">@(log.PerformedByUser?.Full_name ?? "System") · @log.Performed_at.ToString("MMM dd, hh:mm tt")</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No activity yet</p>
+            }
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-5">Data Warehouse Modules</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <a href="@Url.Action("UserNav", "UserAdmin", new { section = "datasources" })" class="no-underline border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all text-center" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <svg class="w-8 h-8 mx-auto mb-2" style="color: #088395;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <p class="text-sm font-bold text-gray-800">Data Sources</p>
+                <p class="text-xs text-gray-400 mt-1">API Integrations</p>
+            </a>
+            <a href="@Url.Action("UserNav", "UserAdmin", new { section = "etl" })" class="no-underline border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all text-center" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <svg class="w-8 h-8 mx-auto mb-2" style="color: #088395;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                <p class="text-sm font-bold text-gray-800">ETL Pipeline</p>
+                <p class="text-xs text-gray-400 mt-1">Submissions</p>
+            </a>
+            <a href="@Url.Action("UserNav", "UserAdmin", new { section = "storage" })" class="no-underline border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all text-center" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <svg class="w-8 h-8 mx-auto mb-2" style="color: #088395;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                </svg>
+                <p class="text-sm font-bold text-gray-800">Data Storage</p>
+                <p class="text-xs text-gray-400 mt-1">Centralized Data</p>
+            </a>
+            <a href="@Url.Action("UserNav", "UserAdmin", new { section = "cleansing" })" class="no-underline border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all text-center" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <svg class="w-8 h-8 mx-auto mb-2" style="color: #088395;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm font-bold text-gray-800">Data Cleansing</p>
+                <p class="text-xs text-gray-400 mt-1">Validation Quality</p>
+            </a>
+            <a href="@Url.Action("UserNav", "UserAdmin", new { section = "logs" })" class="no-underline border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all text-center" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <svg class="w-8 h-8 mx-auto mb-2" style="color: #088395;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm font-bold text-gray-800">Activity Logs</p>
+                <p class="text-xs text-gray-400 mt-1">Audit History</p>
+            </a>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,287 @@
+@using it15_webproject_mvc.Models
+@{
+    var sources = ViewData["AllSources"] as List<DataSource> ?? new List<DataSource>();
+    var submissions = ViewData["AllSubmissions"] as List<DataSubmission> ?? new List<DataSubmission>();
+    var batches = ViewData["AllBatches"] as dynamic;
+
+    var totalSources = (int)(ViewData["TotalSources"] ?? 0);
+    var activeSources = (int)(ViewData["ActiveSources"] ?? 0);
+    var totalSubmissions = (int)(ViewData["TotalSubmissions"] ?? 0);
+    var integratedCount = (int)(ViewData["IntegratedCount"] ?? 0);
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- ETL Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@totalSources</p>
+                    <p class="text-xs text-gray-400">Total Sources</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: #09637E;">@activeSources</p>
+                    <p class="text-xs text-gray-400">Active Sources</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #7AB2B2;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@totalSubmissions</p>
+                    <p class="text-xs text-gray-400">Total Submissions</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: #088395;">@integratedCount</p>
+                    <p class="text-xs text-gray-400">Integrated</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Sources Overview -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">API Data Sources</h3>
+                <p class="text-sm text-gray-500">All configured data pipeline sources (read-only)</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source Name</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">API Endpoint</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Auth</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target Table</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Last Sync</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Created By</th>
+                        <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (sources.Any())
+                    {
+                        @foreach (var s in sources)
+                        {
+                            var statusColor = s.Status == "Active" ? "text-green-600 bg-green-50" :
+                                              s.Status == "Error" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100";
+                            var lastSync = s.Last_sync.HasValue ? s.Last_sync.Value.ToString("MMM dd, yyyy hh:mm tt") : "Never";
+
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-gray-800">@s.SourceName</td>
+                                <td class="py-3 px-4 text-xs font-mono text-gray-500 max-w-[200px] truncate" title="@s.ApiBaseUrl@s.ApiEndpoint">
+                                    @s.ApiBaseUrl@s.ApiEndpoint
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">@s.AuthMethod</span>
+                                </td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-600">@s.TargetTable</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@lastSync</td>
+                                <td class="py-3 px-4 text-gray-600 text-xs">@(s.CreatedByUser?.Full_name ?? "—")</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @statusColor">@s.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-gray-400 text-sm">No data sources configured yet.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Submissions Overview -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Data Submissions</h3>
+                <p class="text-sm text-gray-500">Track all batch submissions and their integration status</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Batch ID</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Rows</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Mode</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Submitted By</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Date</th>
+                        <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (submissions.Any())
+                    {
+                        @foreach (var sub in submissions)
+                        {
+                            var color = sub.Status switch
+                            {
+                                "Integrated" => "text-green-600 bg-green-50",
+                                "Submitted" => "text-blue-600 bg-blue-50",
+                                "Verified" => "text-indigo-600 bg-indigo-50",
+                                "Failed" => "text-red-600 bg-red-50",
+                                _ => "text-gray-500 bg-gray-100"
+                            };
+
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@sub.BatchId</td>
+                                <td class="py-3 px-4 text-gray-600">@(sub.DataSource?.SourceName ?? "—")</td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-500">@sub.TargetTable</td>
+                                <td class="py-3 px-4 text-gray-600">
+                                    <span class="text-green-600 font-semibold">@sub.ValidRows</span>
+                                    <span class="text-gray-400">/</span>
+                                    <span>@sub.TotalRows</span>
+                                    @if (sub.ErrorRows > 0)
+                                    {
+                                        <span class="text-red-500 text-xs ml-1">(@sub.ErrorRows err)</span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@sub.LoadMode</td>
+                                <td class="py-3 px-4 text-gray-600 text-xs">@(sub.SubmittedByUser?.Full_name ?? "—")</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@sub.Created_at.ToString("MMM dd, yyyy")</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @color">@sub.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="py-8 text-center text-gray-400 text-sm">No submissions yet.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Staging Batches Pipeline -->
+    <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #7AB2B2;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Staging Batches</h3>
+                <p class="text-sm text-gray-500">Data batches currently in the pipeline</p>
+            </div>
+        </div>
+
+        @if (batches != null && ((System.Collections.ICollection)batches!).Count > 0)
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Batch ID</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Rows</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Pulled At</th>
+                            <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var batch in (IEnumerable<dynamic>)batches!)
+                        {
+                            var batchColor = (string)batch.Status switch
+                            {
+                                "Submitted" => "text-blue-600 bg-blue-50",
+                                "Verified" => "text-green-600 bg-green-50",
+                                "Pending" => "text-amber-600 bg-amber-50",
+                                _ => "text-red-600 bg-red-50"
+                            };
+
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@batch.BatchId</td>
+                                <td class="py-3 px-4 text-gray-600">@batch.DataSourceName</td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-500">@batch.TargetTable</td>
+                                <td class="py-3 px-4 text-gray-600">
+                                    @batch.TotalRows total
+                                    <span class="text-xs text-gray-400 ml-1">
+                                        (<span class="text-green-600">@batch.ValidRows</span> valid
+                                        @if ((int)batch.ErrorRows > 0)
+                                        {
+                                            <span> · <span class="text-red-500">@batch.ErrorRows</span> err</span>
+                                        }
+                                        @if ((int)batch.PendingRows > 0)
+                                        {
+                                            <span> · <span class="text-amber-500">@batch.PendingRows</span> pending</span>
+                                        })
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@(((DateTime)batch.PulledAt).ToString("MMM dd, yyyy hh:mm tt"))</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @batchColor">@batch.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-8 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                </svg>
+                <p class="text-sm font-medium">No staging batches in the pipeline</p>
+            </div>
+        }
+    </div>
+</div>

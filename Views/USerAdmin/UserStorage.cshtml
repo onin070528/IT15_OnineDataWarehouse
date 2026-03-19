@@ -1,0 +1,355 @@
+@using it15_webproject_mvc.Models
+@using System.Text.Json
+@{
+    var warehouseSummary = ViewData["WarehouseSummary"] as IEnumerable<dynamic>;
+    var recentLoads = ViewData["RecentLoads"] as List<DataSubmission> ?? new List<DataSubmission>();
+    var totalTables = (int)(ViewData["TotalTables"] ?? 0);
+    var totalWarehouseRows = (int)(ViewData["TotalWarehouseRows"] ?? 0);
+    var totalBatches = (int)(ViewData["TotalBatches"] ?? 0);
+    var totalStagingRows = (int)(ViewData["TotalStagingRows"] ?? 0);
+    var totalStoredRows = (int)(ViewData["TotalStoredRows"] ?? 0);
+    var archivedRows = (int)(ViewData["ArchivedRows"] ?? 0);
+    var tableNames = ViewData["TableNames"] as List<string> ?? new List<string>();
+    var archivedTableNames = ViewData["ArchivedTableNames"] as List<string> ?? new List<string>();
+    var warehouseColumns = ViewData["WarehouseColumns"] as List<string> ?? new List<string>();
+    var warehouseRows = ViewData["WarehouseRows"] as List<Dictionary<string, string>> ?? new List<Dictionary<string, string>>();
+    var selectedTable = ViewData["SelectedTable"] as string;
+    var warehouseRowCount = (int)(ViewData["WarehouseRowCount"] ?? 0);
+}
+
+<div class="p-8 bg-gray-100 min-h-full">
+
+@if (TempData["Success"] != null)
+{
+    <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        </span>
+        <p class="text-sm font-medium text-emerald-800">@TempData["Success"]</p>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </span>
+        <p class="text-sm font-medium text-red-800">@TempData["Error"]</p>
+    </div>
+}
+
+<!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #09637E;">@totalTables</p>
+            <p class="text-xs text-gray-400 mt-1">Warehouse Tables</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #088395;">@totalWarehouseRows.ToString("N0")</p>
+            <p class="text-xs text-gray-400 mt-1">Active Warehouse Rows</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #7AB2B2;">@totalBatches</p>
+            <p class="text-xs text-gray-400 mt-1">Loaded Batches</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold text-gray-400">@archivedRows.ToString("N0")</p>
+            <p class="text-xs text-gray-400 mt-1">Archived (Historical)</p>
+        </div>
+    </div>
+
+    <!-- Pipeline Progress -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h4 class="text-sm font-bold text-gray-900 mb-3">Data Pipeline: Staging ? Warehouse</h4>
+        <div class="flex items-center gap-4">
+            <div class="flex-1">
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Staging (raw)</span>
+                    <span>@totalStagingRows.ToString("N0") rows</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-3">
+                    <div class="h-3 rounded-full" style="width: 100%; background-color: #7AB2B2;"></div>
+                </div>
+            </div>
+            <svg class="w-6 h-6 flex-shrink-0 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+            <div class="flex-1">
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Warehouse (cleansed)</span>
+                    <span>@totalStoredRows.ToString("N0") rows</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-3">
+                    @{
+                        var loadPct = totalStagingRows > 0 ? Math.Round(totalStoredRows * 100.0 / totalStagingRows, 1) : 0;
+                    }
+                    <div class="h-3 rounded-full" style="width: @(loadPct)%; background-color: #088395;"></div>
+                </div>
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">@(loadPct)% of staging data has been cleansed, approved, and loaded into the warehouse.</p>
+    </div>
+
+    <!-- Warehouse Tables Summary -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Warehouse Tables</h3>
+                <p class="text-xs text-gray-400">Cleansed data loaded after Manager approval — organized by target table</p>
+            </div>
+        </div>
+
+        @if (warehouseSummary != null && warehouseSummary.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #EBF4F6;">
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Source</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Target Table</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Batches</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Active Rows</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Latest Ver.</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Last Loaded</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Status</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in warehouseSummary)
+                        {
+                            var statusBg = (string)s.Status == "Active" ? "text-green-600 bg-green-50" : "text-gray-500 bg-gray-100";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-gray-800">@s.SourceName</td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-600">@s.TargetTable</td>
+                                <td class="py-3 px-4 text-center text-gray-600">@s.BatchCount</td>
+                                <td class="py-3 px-4 text-center font-semibold text-gray-800">@((int)s.TotalRows > 0 ? ((int)s.TotalRows).ToString("N0") : "0")</td>
+                                <td class="py-3 px-4 text-center text-gray-500">v@s.LatestVersion</td>
+                                <td class="py-3 px-4 text-gray-500">@(((DateTime)s.LastLoaded).ToString("MMM dd, yyyy hh:mm tt"))</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @statusBg">@s.Status</span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <form method="post" asp-action="ArchiveTable" asp-controller="UserAdmin" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="targetTable" value="@s.TargetTable" />
+                                        <button type="submit" class="px-3 py-1 text-xs font-semibold rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                                                onclick="return confirm('Archive all active records in @s.TargetTable?')">
+                                            Archive
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4" style="color: #7AB2B2;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                </svg>
+                <p class="text-sm font-medium">No data in warehouse yet</p>
+                <p class="text-xs mt-1">Data appears here after Manager approves submissions — only cleansed, valid rows are loaded</p>
+            </div>
+        }
+    </div>
+
+    <!-- Data Browser -->
+    @if (tableNames.Any())
+    {
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold" style="color: #09637E;">Browse Warehouse Data</h3>
+                        <p class="text-xs text-gray-400">Select a table to view its cleansed data (showing up to 100 rows)</p>
+                    </div>
+                </div>
+                <form method="get" action="@Url.Action("UserNav", "UserAdmin")" class="flex items-center gap-2">
+                    <input type="hidden" name="section" value="storage" />
+                    <select name="viewTable" onchange="this.form.submit()"
+                            class="px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''">
+                        <option value="">Select a table...</option>
+                        @foreach (var table in tableNames)
+                        {
+                            <option value="@table" selected="@(selectedTable == table)">@table</option>
+                        }
+                    </select>
+                </form>
+            </div>
+
+            @if (!string.IsNullOrEmpty(selectedTable) && warehouseColumns.Any())
+            {
+                <div class="mb-4 flex items-center gap-2">
+                    <span class="text-xs font-mono font-semibold text-gray-800 bg-gray-100 px-3 py-1 rounded">@selectedTable</span>
+                    <span class="text-xs text-gray-400">— @warehouseRowCount row(s) displayed</span>
+                </div>
+
+                <style>
+                    .resizable-table th.resizable {
+                        position: relative;
+                        overflow: hidden;
+                        resize: horizontal;
+                        min-width: 80px;
+                        max-width: 600px;
+                    }
+                    .resizable-table td .cell-content {
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                        display: block;
+                        cursor: default;
+                    }
+                    .resizable-table td .cell-content.expanded {
+                        white-space: normal;
+                        word-break: break-all;
+                        overflow: visible;
+                    }
+                </style>
+                <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                    <table class="w-full text-sm resizable-table" style="table-layout: fixed;">
+                        <thead>
+                            <tr style="background-color: #EBF4F6;">
+                                <th class="text-left py-3 px-4 font-semibold text-xs" style="color: #088395; width: 40px;">#</th>
+                                @foreach (var col in warehouseColumns)
+                                {
+                                    <th class="resizable text-left py-3 px-4 font-semibold text-xs" style="color: #088395; width: 160px;">@col</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ var rowNum = 1; }
+                            @foreach (var row in warehouseRows)
+                            {
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <td class="py-2.5 px-4 text-gray-400 text-xs font-mono">@rowNum</td>
+                                    @foreach (var col in warehouseColumns)
+                                    {
+                                        var cellValue = row.ContainsKey(col) ? row[col] : "";
+                                        <td class="py-2.5 px-4 text-gray-700 text-xs" title="@cellValue">
+                                            <span class="cell-content" onclick="this.classList.toggle('expanded')">@cellValue</span>
+                                        </td>
+                                    }
+                                </tr>
+                                rowNum++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-gray-400 mt-2"><span class="font-medium">Tip:</span> Drag the right edge of any column header to resize. Click on a cell to expand/collapse its content.</p>
+
+                @if (warehouseRowCount >= 100)
+                {
+                    <p class="text-xs text-gray-400 mt-3 text-center">Showing first 100 rows. Full data is stored in the warehouse.</p>
+                }
+            }
+            else if (!string.IsNullOrEmpty(selectedTable))
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No data found in table '@selectedTable'.</p>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">Select a table from the dropdown above to browse its data.</p>
+            }
+        </div>
+    }
+
+    <!-- Archived Data Restore -->
+    @if (archivedRows > 0)
+    {
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Archived Data</h3>
+                    <p class="text-xs text-gray-400">@archivedRows.ToString("N0") archived records available for restoration</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">To restore archived records for a specific table, select the table and click restore.</p>
+            @if (archivedTableNames.Any())
+            {
+                @foreach (var tbl in archivedTableNames)
+                {
+                    <form method="post" asp-action="RestoreTable" asp-controller="UserAdmin" class="inline mr-2 mb-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="targetTable" value="@tbl" />
+                        <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                                onclick="return confirm('Restore all archived records for @tbl?')">
+                            Restore @tbl
+                        </button>
+                    </form>
+                }
+            }
+            else
+            {
+                <p class="text-sm text-gray-400">Archived rows exist, but no archived table names were found.</p>
+            }
+        </div>
+    }
+
+    <!-- Recent Load Events -->
+    @if (recentLoads.Any())
+    {
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Recent Warehouse Loads</h3>
+                    <p class="text-xs text-gray-400">History of approved data loads into the warehouse</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #EBF4F6;">
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Batch</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Source</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Target</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Mode</th>
+                            <th class="text-center py-3 px-4 font-semibold text-green-600">Loaded</th>
+                            <th class="text-center py-3 px-4 font-semibold text-gray-400">Skipped</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Loaded At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var load in recentLoads)
+                        {
+                            var modeBadge = load.LoadMode == "Overwrite" ? "text-orange-600 bg-orange-50" :
+                                            load.LoadMode == "Upsert" ? "text-blue-600 bg-blue-50" : "text-green-600 bg-green-50";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@load.BatchId</td>
+                                <td class="py-3 px-4 text-gray-600">@(load.DataSource?.SourceName ?? "—")</td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-500">@load.TargetTable</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2 py-0.5 rounded-full @modeBadge">@load.LoadMode</span>
+                                </td>
+                                <td class="py-3 px-4 text-center text-green-600 font-semibold">@load.LoadedRows</td>
+                                <td class="py-3 px-4 text-center text-gray-400">@load.SkippedRows</td>
+                                <td class="py-3 px-4 text-gray-500">@(load.Integrated_at?.ToString("MMM dd, yyyy hh:mm tt") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

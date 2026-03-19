@@ -1,0 +1,157 @@
+@{
+    var sourcePerf = ViewData["SourcePerformance"] as dynamic;
+    var userActivity = ViewData["UserActivity"] as dynamic;
+    var totalSources = (int)(ViewData["TotalSources"] ?? 0);
+    var totalRows = (int)(ViewData["TotalRows"] ?? 0);
+    var validRows = (int)(ViewData["ValidRows"] ?? 0);
+    var errorRows = (int)(ViewData["ErrorRows"] ?? 0);
+    var successRate = (double)(ViewData["SuccessRate"] ?? 0.0);
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- Overall KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <p class="text-2xl font-bold text-gray-900">@totalSources</p>
+            <p class="text-xs text-gray-400 mt-1">Total Sources</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <p class="text-2xl font-bold text-gray-900">@totalRows.ToString("N0")</p>
+            <p class="text-xs text-gray-400 mt-1">Total Rows Processed</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <p class="text-2xl font-bold" style="color: #088395;">@validRows.ToString("N0")</p>
+            <p class="text-xs text-gray-400 mt-1">Valid Rows</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <p class="text-2xl font-bold text-red-500">@errorRows.ToString("N0")</p>
+            <p class="text-xs text-gray-400 mt-1">Error Rows</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <p class="text-2xl font-bold" style="color: #09637E;">@successRate%</p>
+            <p class="text-xs text-gray-400 mt-1">Success Rate</p>
+            <div class="w-full bg-gray-100 rounded-full h-2 mt-2">
+                <div class="h-2 rounded-full" style="width: @(successRate)%; background-color: #088395;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Source Performance -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Source Performance</h3>
+                <p class="text-sm text-gray-500">Data quality and volume per source</p>
+            </div>
+        </div>
+
+        @if (sourcePerf != null && ((System.Collections.ICollection)sourcePerf!).Count > 0)
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                            <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Batches</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Total Rows</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Valid</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Errors</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Quality</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Last Sync</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in (IEnumerable<dynamic>)sourcePerf!)
+                        {
+                            var statusColor = (string)s.Status == "Active" ? "text-green-600 bg-green-50" :
+                                              (string)s.Status == "Error" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100";
+                            var qualityPct = (int)s.TotalRows > 0 ? Math.Round((int)s.ValidRows * 100.0 / (int)s.TotalRows, 1) : 0;
+                            var qualityColor = qualityPct >= 90 ? "bg-green-500" : qualityPct >= 70 ? "bg-amber-500" : "bg-red-500";
+
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-gray-800">@s.SourceName</td>
+                                <td class="py-3 px-4 text-center"><span class="text-xs font-medium px-2.5 py-1 rounded-full @statusColor">@s.Status</span></td>
+                                <td class="py-3 px-4 text-gray-600">@s.TotalBatches</td>
+                                <td class="py-3 px-4 text-gray-600">@(((int)s.TotalRows).ToString("N0"))</td>
+                                <td class="py-3 px-4 text-green-600 font-semibold">@(((int)s.ValidRows).ToString("N0"))</td>
+                                <td class="py-3 px-4 text-red-500">@(((int)s.ErrorRows).ToString("N0"))</td>
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-20 bg-gray-100 rounded-full h-2">
+                                            <div class="@qualityColor h-2 rounded-full" style="width: @(qualityPct)%"></div>
+                                        </div>
+                                        <span class="text-xs text-gray-500">@qualityPct%</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@(s.Last_sync != null ? ((DateTime)s.Last_sync).ToString("MMM dd, yyyy") : "Never")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-sm text-gray-400 text-center py-6">No performance data available.</p>
+        }
+    </div>
+
+    <!-- User Activity -->
+    <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Top Contributors</h3>
+                <p class="text-sm text-gray-500">Most active users by logged actions</p>
+            </div>
+        </div>
+
+        @if (userActivity != null && ((System.Collections.ICollection)userActivity!).Count > 0)
+        {
+            <div class="space-y-4">
+                @{
+                    int maxActivity = 1;
+                    foreach (var u in (IEnumerable<dynamic>)userActivity!)
+                    {
+                        if ((int)u.ActionCount > maxActivity) maxActivity = (int)u.ActionCount;
+                    }
+                    int rank = 1;
+                }
+                @foreach (var u in (IEnumerable<dynamic>)userActivity!)
+                {
+                    var pct = maxActivity > 0 ? (int)u.ActionCount * 100 / maxActivity : 0;
+                    <div class="flex items-center gap-4">
+                        <span class="w-7 text-sm font-bold text-gray-400 text-right">@(rank++)</span>
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background-color: #EBF4F6; color: #09637E;">
+                            @(((string)u.UserName).Substring(0, Math.Min(2, ((string)u.UserName).Length)).ToUpper())
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-sm font-semibold text-gray-800 truncate">@u.UserName</span>
+                                <span class="text-xs text-gray-500">@u.ActionCount actions</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full" style="width: @(pct)%; background-color: #088395;"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-sm text-gray-400 text-center py-6">No user activity data yet.</p>
+        }
+    </div>
+</div>

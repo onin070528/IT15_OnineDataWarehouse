@@ -1,0 +1,122 @@
+<!-- Notification Bell + Dropdown -->
+<div class="relative" id="notifContainer">
+    <button onclick="toggleNotifDropdown()" class="relative p-2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none" id="notifBellBtn">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        <span id="notifBadge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+        <span id="notifCountBadge" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center hidden px-1">0</span>
+    </button>
+
+    <!-- Dropdown -->
+    <div id="notifDropdown" class="hidden absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h4 class="text-sm font-bold text-gray-900">Notifications</h4>
+            <button onclick="markAllNotifRead()" class="text-xs font-semibold hover:underline" style="color: #088395;">Mark all read</button>
+        </div>
+        <div id="notifList" class="max-h-80 overflow-y-auto">
+            <div class="px-4 py-8 text-center text-gray-400 text-sm">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var _notifOpen = false;
+
+    function toggleNotifDropdown() {
+        var dd = document.getElementById('notifDropdown');
+        _notifOpen = !_notifOpen;
+        if (_notifOpen) {
+            dd.classList.remove('hidden');
+            loadNotifications();
+        } else {
+            dd.classList.add('hidden');
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var container = document.getElementById('notifContainer');
+        if (container && !container.contains(e.target)) {
+            document.getElementById('notifDropdown').classList.add('hidden');
+            _notifOpen = false;
+        }
+    });
+
+    function loadNotifications() {
+        fetch('/api/notifications')
+            .then(r => r.json())
+            .then(data => {
+                updateNotifBadge(data.unreadCount);
+                var list = document.getElementById('notifList');
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">No notifications yet.</div>';
+                    return;
+                }
+                var html = '';
+                data.notifications.forEach(function (n) {
+                    var bgClass = n.isRead ? '' : 'bg-blue-50/40';
+                    var dotHtml = n.isRead ? '' : '<span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5"></span>';
+                    var typeIcon = n.type === 'Success' ? '?' : n.type === 'Warning' ? '??' : n.type === 'Error' ? '?' : '??';
+                    html += '<div class="flex items-start gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ' + bgClass + '" onclick="onNotifClick(' + n.notificationID + ', \'' + (n.link || '') + '\')">';
+                    html += dotHtml;
+                    html += '<div class="flex-1 min-w-0">';
+                    html += '<p class="text-sm font-medium text-gray-800">' + typeIcon + ' ' + escapeHtml(n.title) + '</p>';
+                    if (n.message) {
+                        html += '<p class="text-xs text-gray-500 mt-0.5 truncate">' + escapeHtml(n.message) + '</p>';
+                    }
+                    html += '<p class="text-xs text-gray-400 mt-1">' + n.timeAgo + '</p>';
+                    html += '</div></div>';
+                });
+                list.innerHTML = html;
+            })
+            .catch(function () {
+                document.getElementById('notifList').innerHTML = '<div class="px-4 py-8 text-center text-gray-400 text-sm">Failed to load.</div>';
+            });
+    }
+
+    function updateNotifBadge(count) {
+        var badge = document.getElementById('notifBadge');
+        var countBadge = document.getElementById('notifCountBadge');
+        if (count > 0) {
+            badge.classList.remove('hidden');
+            countBadge.classList.remove('hidden');
+            countBadge.textContent = count > 99 ? '99+' : count;
+        } else {
+            badge.classList.add('hidden');
+            countBadge.classList.add('hidden');
+        }
+    }
+
+    function onNotifClick(id, link) {
+        fetch('/api/notifications/read/' + id, { method: 'POST' }).then(function () {
+            loadNotifications();
+            if (link) window.location.href = link;
+        });
+    }
+
+    function markAllNotifRead() {
+        fetch('/api/notifications/read-all', { method: 'POST' }).then(function () {
+            loadNotifications();
+        });
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Poll for new notifications every 30 seconds
+    setInterval(function () {
+        fetch('/api/notifications')
+            .then(r => r.json())
+            .then(data => updateNotifBadge(data.unreadCount))
+            .catch(function () { });
+    }, 30000);
+
+    // Initial badge load
+    fetch('/api/notifications')
+        .then(r => r.json())
+        .then(data => updateNotifBadge(data.unreadCount))
+        .catch(function () { });
+</script>

@@ -1,0 +1,253 @@
+﻿@using it15_webproject_mvc.Models
+@{
+    var organizations = ViewData["Organizations"] as List<Organization> ?? new List<Organization>();
+    var totalOrgs = (int)(ViewData["TotalOrganizations"] ?? 0);
+    var totalUsersAll = (int)(ViewData["TotalUsersAll"] ?? 0);
+    var freeOrgs = (int)(ViewData["FreeOrgs"] ?? 0);
+    var basicOrgs = (int)(ViewData["BasicOrgs"] ?? 0);
+    var premiumOrgs = (int)(ViewData["PremiumOrgs"] ?? 0);
+    var totalRevenue = (decimal)(ViewData["TotalRevenue"] ?? 0m);
+    var paidPayments = (int)(ViewData["PaidPayments"] ?? 0);
+    var pendingPayments = (int)(ViewData["PendingPayments"] ?? 0);
+    var allPayments = ViewData["AllPayments"] as List<Payment> ?? new List<Payment>();
+    var roleDistribution = ViewData["RoleDistribution"] as IEnumerable<dynamic>;
+}
+
+<div class="py-6 min-h-full">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #09637E;">@totalOrgs</p>
+            <p class="text-xs text-gray-400 mt-1">Total Organizations</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #088395;">₱@totalRevenue.ToString("N2")</p>
+            <p class="text-xs text-gray-400 mt-1">Total Revenue</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #088395;">@paidPayments</p>
+            <p class="text-xs text-gray-400 mt-1">Paid Subscriptions</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #7AB2B2;">@totalUsersAll</p>
+            <p class="text-xs text-gray-400 mt-1">Total Users Across All Orgs</p>
+        </div>
+    </div>
+
+    <!-- Subscription Plan Distribution -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm border-2 p-6 @(freeOrgs > 0 ? "" : "opacity-60")" style="border-color: #9ca3af;">
+            <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wider">🆓 Free</span>
+                <span class="text-3xl font-bold" style="color: #09637E;">@freeOrgs</span>
+            </div>
+            <p class="text-xs text-gray-400">Organizations on Free plan</p>
+            <p class="text-xs text-gray-400 mt-1">₱0/mo · Up to 3 users · 1 data source</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border-2 p-6 @(basicOrgs > 0 ? "" : "opacity-60")" style="border-color: #088395;">
+            <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style="background: #EBF4F6; color: #088395;">📦 Basic</span>
+                <span class="text-3xl font-bold" style="color: #09637E;">@basicOrgs</span>
+            </div>
+            <p class="text-xs text-gray-400">Organizations on Basic plan</p>
+            <p class="text-xs text-gray-400 mt-1">₱150/mo · Up to 10 users · 3 data sources</p>
+        </div>
+        <div class="rounded-2xl shadow-sm border-2 p-6 text-white @(premiumOrgs > 0 ? "" : "opacity-70")" style="background: linear-gradient(135deg, #088395, #09637E); border-color: #088395;">
+            <div class="flex items-center justify-between mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9);">⭐ Premium</span>
+                <span class="text-3xl font-bold">@premiumOrgs</span>
+            </div>
+            <p class="text-xs" style="color: rgba(255,255,255,0.7);">Organizations on Premium plan</p>
+            <p class="text-xs mt-1" style="color: rgba(255,255,255,0.7);">₱500/mo · Unlimited users · All modules</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+
+        <!-- Role Distribution -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #09637E;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Roles</h3>
+                    <p class="text-xs text-gray-400">User distribution by role</p>
+                </div>
+            </div>
+            @if (roleDistribution != null && roleDistribution.Any())
+            {
+                var topRoleCount = roleDistribution.Max(r => (int)r.Count);
+                topRoleCount = topRoleCount > 0 ? topRoleCount : 1;
+                <div class="space-y-4">
+                    @foreach (var rd in roleDistribution)
+                    {
+                        var pct = Math.Round((double)(int)rd.Count * 100.0 / topRoleCount, 0);
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600 font-medium">@rd.Role</span>
+                                <span class="text-gray-800 font-semibold">@rd.Count</span>
+                            </div>
+                            <div class="w-full rounded-full h-2" style="background: #EBF4F6;">
+                                <div class="h-2 rounded-full" style="background: #088395; width: @(pct)%;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No roles found.</p>
+            }
+        </div>
+
+        <!-- Organizations with Subscription Plans -->
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">All Organizations</h3>
+                    <p class="text-xs text-gray-400">@totalOrgs registered organization(s) with their subscription status</p>
+                </div>
+            </div>
+            @if (organizations.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #EBF4F6;">
+                                <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Organization</th>
+                                <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Plan</th>
+                                <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Users</th>
+                                <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Roles in Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var org in organizations)
+                            {
+                                var orgRoles = org.Users.Select(u => u.Role?.RoleName).Where(r => r != null).Distinct().ToList();
+                                var planBadge = org.SubscriptionPlan switch
+                                {
+                                    "Premium" => "background: linear-gradient(135deg, #088395, #09637E); color: white;",
+                                    "Basic" => "background: #EBF4F6; color: #088395;",
+                                    _ => "background: #f3f4f6; color: #6b7280;"
+                                };
+                                var planIcon = org.SubscriptionPlan switch { "Premium" => "⭐", "Basic" => "📦", _ => "🆓" };
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background: #EBF4F6; color: #088395;">
+                                                @org.OrganizationName.Substring(0, Math.Min(2, org.OrganizationName.Length)).ToUpper()
+                                            </span>
+                                            <span class="font-semibold text-gray-800">@org.OrganizationName</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <span class="text-xs font-bold px-2.5 py-1 rounded-full" style="@planBadge">@planIcon @org.SubscriptionPlan</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center font-semibold text-gray-800">@org.Users.Count</td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach (var role in orgRoles)
+                                            {
+                                                <span class="text-xs px-2 py-0.5 rounded-full" style="background: #EBF4F6; color: #09637E;">@role</span>
+                                            }
+                                            @if (!orgRoles.Any())
+                                            {
+                                                <span class="text-xs text-gray-300">—</span>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No organizations registered yet.</p>
+            }
+        </div>
+    </div>
+
+    <!-- Payment History — Who Subscribed -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Subscription Payment History</h3>
+                <p class="text-xs text-gray-400">Who subscribed, when, and how much — @allPayments.Count total transaction(s)</p>
+            </div>
+        </div>
+        @if (allPayments.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #EBF4F6;">
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Subscriber</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Organization</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Plan</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Amount</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Date</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Paid At</th>
+                            <th class="text-center py-3 px-4 font-semibold" style="color: #088395;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in allPayments)
+                        {
+                            var statusBg = p.Status == "Paid" ? "text-green-600 bg-green-50" :
+                                           p.Status == "Pending" ? "text-yellow-600 bg-yellow-50" : "text-red-600 bg-red-50";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style="background: #EBF4F6; color: #088395;">
+                                            @(p.User?.Full_name?.Substring(0, Math.Min(2, p.User?.Full_name?.Length ?? 0)).ToUpper() ?? "??")
+                                        </span>
+                                        <div>
+                                            <p class="font-semibold text-gray-800 text-sm">@(p.User?.Full_name ?? "Unknown")</p>
+                                            <p class="text-xs text-gray-400">@(p.User?.Email ?? "—")</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-gray-600">@(p.Organization?.OrganizationName ?? "—")</td>
+                                <td class="py-3 px-4">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full" style="background: #EBF4F6; color: #09637E;">@p.PlanName</span>
+                                </td>
+                                <td class="py-3 px-4 font-semibold text-gray-800">₱@p.Amount.ToString("N2")</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@p.Created_at.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@(p.Paid_at?.ToString("MMM dd, yyyy hh:mm tt") ?? "—")</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @statusBg">@p.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4" style="color: #7AB2B2;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+                <p class="text-sm font-medium">No subscription payments yet</p>
+                <p class="text-xs mt-1">Payment records will appear here when organizations subscribe</p>
+            </div>
+        }
+    </div>
+</div>

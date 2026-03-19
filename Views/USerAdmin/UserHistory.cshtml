@@ -1,0 +1,100 @@
+@using it15_webproject_mvc.Models
+@{
+    var logs = ViewData["AuditLogs"] as List<AuditLog> ?? new List<AuditLog>();
+    var totalActions = (int)(ViewData["TotalActions"] ?? 0);
+    var todayActions = (int)(ViewData["TodayActions"] ?? 0);
+    var uniqueEntities = (int)(ViewData["UniqueEntities"] ?? 0);
+    var uniqueUsers = (int)(ViewData["UniqueUsers"] ?? 0);
+}
+
+<div class="p-8 bg-gray-100 min-h-full">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #09637E;">@totalActions</p>
+            <p class="text-xs text-gray-400 mt-1">Total Actions</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #088395;">@todayActions</p>
+            <p class="text-xs text-gray-400 mt-1">Today's Actions</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #7AB2B2;">@uniqueEntities</p>
+            <p class="text-xs text-gray-400 mt-1">Unique Entities</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <p class="text-2xl font-bold" style="color: #09637E;">@uniqueUsers</p>
+            <p class="text-xs text-gray-400 mt-1">Active Users</p>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: #EBF4F6; color: #088395;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Activity Logs</h3>
+                <p class="text-xs text-gray-400">Audit trail for all actions in your organization</p>
+            </div>
+        </div>
+
+        @if (logs.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #EBF4F6;">
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Timestamp</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">User</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Action</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Entity</th>
+                            <th class="text-left py-3 px-4 font-semibold" style="color: #088395;">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in logs)
+                        {
+                            var actionColor = log.Action.Contains("Failed") || log.Action.Contains("Rejected") || log.Action.Contains("Deleted")
+                                ? "text-red-600 bg-red-50"
+                                : log.Action.Contains("Approved") || log.Action.Contains("Completed") || log.Action.Contains("Integrated")
+                                    ? "text-green-600 bg-green-50"
+                                    : "text-blue-600 bg-blue-50";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 text-gray-500 whitespace-nowrap">@log.Performed_at.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                <td class="py-3 px-4">
+                                    <span class="font-semibold text-gray-800">@(log.PerformedByUser?.Full_name ?? "System")</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @actionColor">@log.Action</span>
+                                </td>
+                                <td class="py-3 px-4 text-gray-600">
+                                    <span class="text-xs text-gray-400">@log.EntityType</span>
+                                    @if (!string.IsNullOrEmpty(log.EntityName))
+                                    {
+                                        <br/><span class="font-mono text-xs text-gray-600">@log.EntityName</span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4 text-gray-500 text-xs max-w-xs truncate" title="@log.Details">@(log.Details ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4" style="color: #7AB2B2;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm font-medium">No activity logs yet</p>
+                <p class="text-xs mt-1">Actions performed by your organization's users will appear here</p>
+            </div>
+        }
+    </div>
+</div>

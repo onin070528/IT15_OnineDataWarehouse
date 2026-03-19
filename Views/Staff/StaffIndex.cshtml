@@ -1,0 +1,276 @@
+@using it15_webproject_mvc.Models
+@{
+    var sourceCount = (int)(ViewData["SourceCount"] ?? 0);
+    var totalBatches = (int)(ViewData["TotalBatches"] ?? 0);
+    var pendingVerify = (int)(ViewData["PendingVerify"] ?? 0);
+    var submittedCount = (int)(ViewData["SubmittedCount"] ?? 0);
+    var integratedCount = (int)(ViewData["IntegratedCount"] ?? 0);
+    var auditCount = (int)(ViewData["AuditLogCount"] ?? 0);
+    var recentSubmissions = ViewData["RecentSubmissions"] as List<DataSubmission> ?? new List<DataSubmission>();
+    var recentBatches = ViewData["RecentBatches"] as dynamic;
+}
+
+<div class="p-8 bg-gray-100 min-h-full">
+
+    <!-- STAFF DASHBOARD OVERVIEW -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 class="text-xl font-bold text-gray-900">Staff Dashboard</h2>
+        <p class="text-sm text-gray-500 mt-1 mb-6">Your data pipeline at a glance &mdash; configure APIs, pull, verify, and submit.</p>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5">
+
+            <!-- API Sources -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #09637E, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@sourceCount</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">API Sources</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Batches Pulled -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalBatches</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Batches Pulled</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Pending Verification -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #7AB2B2, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@pendingVerify</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Pending Verify</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Submitted -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #09637E, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@submittedCount</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Submitted</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Integrated -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #088395, #09637E);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@integratedCount</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Integrated</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Audit History -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #7AB2B2, #09637E);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@auditCount</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">History Logs</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-5">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-5">
+
+            <!-- API Sources -->
+            <a href="@Url.Action("StaffNav", "Staff", new { section = "sources" })"
+               class="group border-2 border-gray-200 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="--hover-border: #088395;" onmouseover="this.style.borderColor='#088395'" onmouseout="this.style.borderColor=''">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">API Sources</h4>
+                <p class="text-xs text-gray-400 mt-1">Configure API connections</p>
+            </a>
+
+            <!-- Pull -->
+            <a href="@Url.Action("StaffNav", "Staff", new { section = "upload" })"
+               class="group border-2 border-gray-200 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Pull Data</h4>
+                <p class="text-xs text-gray-400 mt-1">Fetch data from company APIs</p>
+            </a>
+
+            <!-- Verify -->
+            <a href="@Url.Action("StaffNav", "Staff", new { section = "verify" })"
+               class="group border-2 border-gray-200 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" onmouseover="this.style.borderColor='#088395'" onmouseout="this.style.borderColor=''">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Verify Data</h4>
+                <p class="text-xs text-gray-400 mt-1">Validate data quality</p>
+            </a>
+
+            <!-- Submit -->
+            <a href="@Url.Action("StaffNav", "Staff", new { section = "submit" })"
+               class="group border-2 border-gray-200 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" onmouseover="this.style.borderColor='#09637E'" onmouseout="this.style.borderColor=''">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Submit</h4>
+                <p class="text-xs text-gray-400 mt-1">Send to warehouse</p>
+            </a>
+
+            <!-- History -->
+            <a href="@Url.Action("StaffNav", "Staff", new { section = "history" })"
+               class="group border-2 border-gray-200 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">History</h4>
+                <p class="text-xs text-gray-400 mt-1">View audit trail</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- WORKFLOW PIPELINE -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-5">Data Pipeline &mdash; Your Workflow</h3>
+        <div class="flex items-center justify-between max-w-4xl mx-auto py-6">
+            <!-- Step 0 -->
+            <div class="flex flex-col items-center text-center">
+                <div class="w-14 h-14 rounded-full text-white flex items-center justify-center text-lg font-bold shadow-lg" style="background-color: #09637E;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800 mt-2">Configure API</p>
+            </div>
+            <div class="flex-1 flex items-center px-2">
+                <div class="w-full h-0.5" style="background-color: #7AB2B2;"></div>
+                <svg class="w-4 h-4 flex-shrink-0 -ml-1" style="color: #7AB2B2;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </div>
+            <!-- Step 1 -->
+            <div class="flex flex-col items-center text-center">
+                <div class="w-14 h-14 rounded-full text-white flex items-center justify-center text-lg font-bold shadow-lg" style="background-color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800 mt-2">Pull Data</p>
+            </div>
+            <div class="flex-1 flex items-center px-2">
+                <div class="w-full h-0.5" style="background-color: #7AB2B2;"></div>
+                <svg class="w-4 h-4 flex-shrink-0 -ml-1" style="color: #7AB2B2;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </div>
+            <!-- Step 2 -->
+            <div class="flex flex-col items-center text-center">
+                <div class="w-14 h-14 rounded-full text-white flex items-center justify-center text-lg font-bold shadow-lg" style="background-color: #7AB2B2;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800 mt-2">Verify</p>
+            </div>
+            <div class="flex-1 flex items-center px-2">
+                <div class="w-full h-0.5" style="background-color: #7AB2B2;"></div>
+                <svg class="w-4 h-4 flex-shrink-0 -ml-1" style="color: #7AB2B2;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </div>
+            <!-- Step 3 -->
+            <div class="flex flex-col items-center text-center">
+                <div class="w-14 h-14 rounded-full text-white flex items-center justify-center text-lg font-bold shadow-lg" style="background-color: #09637E;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800 mt-2">Submit</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECENT SUBMISSIONS -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-5">Recent Submissions</h3>
+        @if (recentSubmissions.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Batch ID</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Rows</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Mode</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Date</th>
+                            <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sub in recentSubmissions)
+                        {
+                            var color = sub.Status == "Integrated" ? "text-green-600 bg-green-50" :
+                                        sub.Status == "Submitted" ? "text-blue-600 bg-blue-50" :
+                                        sub.Status == "Failed" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@sub.BatchId</td>
+                                <td class="py-3 px-4 text-gray-600">@sub.DataSource?.SourceName</td>
+                                <td class="py-3 px-4 font-mono text-gray-500">@sub.TargetTable</td>
+                                <td class="py-3 px-4 text-gray-600">@sub.ValidRows / @sub.TotalRows</td>
+                                <td class="py-3 px-4 text-gray-500">@sub.LoadMode</td>
+                                <td class="py-3 px-4 text-gray-500">@sub.Created_at.ToString("MMM dd, yyyy")</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @color">@sub.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-8 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+                <p class="text-sm font-medium">No submissions yet</p>
+                <p class="text-xs mt-1">Start by configuring an API source, pulling data, and working through the pipeline.</p>
+            </div>
+        }
+    </div>
+</div>

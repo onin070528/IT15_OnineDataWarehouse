@@ -1,0 +1,257 @@
+@using it15_webproject_mvc.Models
+@{
+    var warehouseSummary = ViewData["WarehouseSummary"] as dynamic;
+    var totalTables = (int)(ViewData["TotalTables"] ?? 0);
+    var totalWarehouseRows = (int)(ViewData["TotalWarehouseRows"] ?? 0);
+    var tableNames = ViewData["TableNames"] as List<string> ?? new List<string>();
+    var selectedTable = ViewData["SelectedTable"] as string;
+    var warehouseColumns = ViewData["WarehouseColumns"] as List<string>;
+    var warehouseRows = ViewData["WarehouseRows"] as List<Dictionary<string, string>>;
+    var warehouseRowCount = (int)(ViewData["WarehouseRowCount"] ?? 0);
+    var fieldMappings = ViewData["FieldMappings"] as dynamic;
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@totalTables</p>
+                    <p class="text-xs text-gray-400">Warehouse Tables</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: #09637E;">@totalWarehouseRows.ToString("N0")</p>
+                    <p class="text-xs text-gray-400">Total Active Records</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #7AB2B2;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@(fieldMappings != null ? ((System.Collections.ICollection)fieldMappings!).Count : 0)</p>
+                    <p class="text-xs text-gray-400">Source Mappings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Browser -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Query Warehouse Data</h3>
+                    <p class="text-sm text-gray-500">Select a table to browse its records</p>
+                </div>
+            </div>
+            @if (tableNames.Any())
+            {
+                <form method="get" asp-action="AnalystNav" asp-controller="DataAnalyst" class="flex items-center gap-3">
+                    <input type="hidden" name="section" value="warehouse" />
+                    <select name="viewTable" class="px-4 py-2 rounded-lg text-sm border focus:outline-none focus:ring-2" style="border-color: #7AB2B2; --tw-ring-color: #088395;">
+                        <option value="">-- Select table --</option>
+                        @foreach (var t in tableNames)
+                        {
+                            <option value="@t" selected="@(t == selectedTable)">@t</option>
+                        }
+                    </select>
+                    <button type="submit" class="px-4 py-2 text-white rounded-lg text-sm font-semibold transition-colors" style="background-color: #088395;" onmouseover="this.style.backgroundColor='#09637E'" onmouseout="this.style.backgroundColor='#088395'">
+                        Browse
+                    </button>
+                </form>
+            }
+        </div>
+
+        @if (warehouseColumns != null && warehouseRows != null && warehouseRows.Any())
+        {
+            <div class="mb-4 flex items-center gap-2 text-sm text-gray-500">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-semibold" style="background-color: #EBF4F6; color: #088395;">@selectedTable</span>
+                <span>@warehouseRowCount rows shown (max 100)</span>
+                <span>&middot;</span>
+                <span>@warehouseColumns.Count columns</span>
+            </div>
+
+            <style>
+                .resizable-table th.resizable {
+                    position: relative;
+                    overflow: hidden;
+                    resize: horizontal;
+                    min-width: 80px;
+                    max-width: 600px;
+                }
+                .resizable-table td .cell-content {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    display: block;
+                    cursor: default;
+                }
+                .resizable-table td .cell-content.expanded {
+                    white-space: normal;
+                    word-break: break-all;
+                    overflow: visible;
+                }
+            </style>
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table class="w-full text-sm resizable-table" style="table-layout: fixed;">
+                    <thead class="sticky top-0 bg-white" style="z-index: 1;">
+                        <tr class="border-b-2" style="border-color: #7AB2B2;">
+                            <th class="text-left py-3 px-3 text-xs font-semibold" style="color: #088395; width: 40px;">#</th>
+                            @foreach (var col in warehouseColumns)
+                            {
+                                <th class="resizable text-left py-3 px-3 text-xs font-semibold whitespace-nowrap" style="color: #088395; width: 160px;">@col</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ var rowIdx = 1; }
+                        @foreach (var row in warehouseRows)
+                        {
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-2.5 px-3 text-xs text-gray-400 font-mono">@rowIdx</td>
+                                @foreach (var col in warehouseColumns)
+                                {
+                                    var val = row.ContainsKey(col) ? row[col] : "";
+                                    <td class="py-2.5 px-3 text-xs text-gray-700" title="@val">
+                                        <span class="cell-content" onclick="this.classList.toggle('expanded')">@val</span>
+                                    </td>
+                                }
+                            </tr>
+                            rowIdx++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-400 mt-2"><span class="font-medium">Tip:</span> Drag the right edge of any column header to resize. Click on a cell to expand/collapse its content.</p>
+        }
+        else if (!string.IsNullOrEmpty(selectedTable))
+        {
+            <div class="text-center py-8 text-gray-400">
+                <p class="text-sm">No records found in table <span class="font-mono font-semibold">@selectedTable</span></p>
+            </div>
+        }
+        else if (!tableNames.Any())
+        {
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                </svg>
+                <p class="text-sm font-medium">No warehouse data available</p>
+                <p class="text-xs mt-1">Data appears here after Staff submits batches and a Manager approves them.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Warehouse Table Summary -->
+    @if (warehouseSummary != null && ((System.Collections.ICollection)warehouseSummary!).Count > 0)
+    {
+        <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Table Summary</h3>
+                    <p class="text-sm text-gray-500">Overview of all warehouse tables and their record counts</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target Table</th>
+                            <th class="text-right py-3 px-4 text-gray-500 font-semibold">Rows</th>
+                            <th class="text-right py-3 px-4 text-gray-500 font-semibold">Version</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Last Loaded</th>
+                            <th class="text-center py-3 px-4 text-gray-500 font-semibold">Browse</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in (IEnumerable<dynamic>)warehouseSummary!)
+                        {
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 text-gray-700 font-medium">@item.SourceName</td>
+                                <td class="py-3 px-4 font-mono text-xs text-gray-600">@item.TargetTable</td>
+                                <td class="py-3 px-4 text-right font-semibold" style="color: #088395;">@(((int)item.TotalRows).ToString("N0"))</td>
+                                <td class="py-3 px-4 text-right text-gray-500">v@item.LatestVersion</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@(((DateTime)item.LastLoaded).ToString("MMM dd, yyyy hh:mm tt"))</td>
+                                <td class="py-3 px-4 text-center">
+                                    <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "warehouse", viewTable = (string)item.TargetTable })"
+                                       class="px-3 py-1 text-xs font-semibold rounded-lg no-underline transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                                        View Data
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Source Field Mappings -->
+    @if (fieldMappings != null && ((System.Collections.ICollection)fieldMappings!).Count > 0)
+    {
+        <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #7AB2B2;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Source-to-Table Mappings</h3>
+                    <p class="text-sm text-gray-500">How external APIs map to warehouse target tables</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @foreach (var mapping in (IEnumerable<dynamic>)fieldMappings!)
+                {
+                    <div class="rounded-xl p-5" style="border: 1px solid #7AB2B2; background-color: #fafefe;">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-semibold text-gray-800 text-sm">@mapping.SourceName</span>
+                            <svg class="w-5 h-5" style="color: #7AB2B2;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        </div>
+                        <div class="text-xs text-gray-500 space-y-1">
+                            <p><span class="font-medium text-gray-600">API:</span> <span class="font-mono">@mapping.ApiBaseUrl@mapping.ApiEndpoint</span></p>
+                            <p><span class="font-medium text-gray-600">Target:</span> <span class="font-mono px-1.5 py-0.5 rounded" style="background-color: #EBF4F6; color: #088395;">@mapping.TargetTable</span></p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

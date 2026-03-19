@@ -1,0 +1,131 @@
+﻿@{
+    ViewData["Title"] = "Login";
+    var e = Context.Request.Query["error"].ToString();
+    var s = Context.Request.Query["success"].ToString();
+    string? ErrorMessage = null;
+    string? SuccessMessage = null;
+
+    if (!string.IsNullOrEmpty(e))
+    {
+        if (string.Equals(e, "invalid", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Invalid username or password.";
+        else if (string.Equals(e, "missing", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Please enter username and password.";
+        else
+            ErrorMessage = e;
+    }
+
+    if (!string.IsNullOrEmpty(s) && string.Equals(s, "registered", System.StringComparison.OrdinalIgnoreCase))
+    {
+        SuccessMessage = "Account created successfully! You can now sign in.";
+    }
+}
+
+<div class="min-h-screen flex font-[Inter] bg-white">
+
+    <div class="hidden lg:flex flex-1 relative bg-gradient-to-br from-[#7AB2B2] to-[#088395] text-white items-center justify-center p-10 overflow-hidden">
+
+        <div class="absolute w-52 h-52 bg-white/10 rotate-45 -top-16 -left-10 rounded-xl"></div>
+        <div class="absolute w-72 h-72 bg-white/10 rotate-45 -bottom-20 -right-16 rounded-xl"></div>
+        <div class="absolute w-16 h-16 bg-white/10 rotate-45 top-1/4 left-1/4 rounded-lg"></div>
+        <div class="absolute w-20 h-20 bg-white/10 rotate-45 bottom-1/4 right-1/4 rounded-lg"></div>
+
+            <div class="relative text-center max-w-md">
+            <img src="@Url.Content("~/image/neyo .png")" class="w-72 mx-auto mb-8 rounded-xl shadow-2xl" alt="Neyo logo" />
+            <h2 class="text-3xl font-bold mb-4">
+                Manage your system with confidence.
+            </h2>
+            <p class="text-white/80 leading-relaxed">
+                Secure, fast, and reliable data warehousing administration for your business insights.
+            </p>
+
+            <div class="absolute -bottom-24 left-0 right-0 text-sm text-white/50">
+                © 2026 Neyo System. All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-1 items-center justify-center p-8">
+        <div class="w-full max-w-md">
+
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                    Welcome back
+                </h3>
+                <p class="text-gray-500 text-sm">
+                    Please enter your details to sign in.
+                </p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm">
+                    <span class="text-lg">&#10003;</span>
+                    <div>@SuccessMessage</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 shadow-sm">
+                    <span class="text-lg">&#9888;</span>
+                    <div>@ErrorMessage</div>
+                </div>
+            }
+
+            <form method="post" action="/auth/login" class="space-y-6">
+                @Html.AntiForgeryToken()
+
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Username or Email
+                    </label>
+                    <input name="username"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                           placeholder="Enter your username"
+                           required />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <input id="passwordInput"
+                               name="password"
+                               type="password"
+                               class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
+                               placeholder="••••••••"
+                               required />
+                        <button type="button"
+                                onclick="togglePassword()"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            👁
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 rounded-lg bg-gradient-to-r from-[#7AB2B2] to-[#088395] text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition">
+                    Sign In →
+                </button>
+
+                <div class="text-center text-sm text-gray-500 mt-6">
+                    Don't have an account?
+                    <a href="@Url.Action("Register", "Home")" class="text-[#088395] hover:underline">
+                        Create an account
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const input = document.getElementById("passwordInput");
+        input.type = input.type === "password" ? "text" : "password";
+    }
+</script>

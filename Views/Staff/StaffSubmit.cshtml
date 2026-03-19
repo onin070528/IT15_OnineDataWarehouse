@@ -1,0 +1,178 @@
+@using it15_webproject_mvc.Models
+@{
+    var readyBatches = ViewData["ReadyBatches"] as dynamic;
+    var submissions = ViewData["Submissions"] as List<DataSubmission> ?? new List<DataSubmission>();
+    var submitSuccess = TempData["SubmitSuccess"] as string;
+}
+
+<!-- SUBMIT FOR INTEGRATION -->
+<div class="p-8 bg-gray-100 min-h-full">
+
+    <!-- Step Indicator -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="flex items-center justify-between max-w-2xl mx-auto">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <div>
+                    <p class="text-sm font-medium" style="color: #088395;">Pull / Upload</p>
+                    <p class="text-xs text-gray-400">Completed</p>
+                </div>
+            </div>
+            <div class="flex-1 h-0.5 mx-4" style="background-color: #7AB2B2;"></div>
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <div>
+                    <p class="text-sm font-medium" style="color: #088395;">Verify</p>
+                    <p class="text-xs text-gray-400">Completed</p>
+                </div>
+            </div>
+            <div class="flex-1 h-0.5 mx-4" style="background-color: #7AB2B2;"></div>
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-full text-white flex items-center justify-center text-sm font-bold" style="background-color: #088395;">3</span>
+                <div>
+                    <p class="text-sm font-bold text-gray-900">Submit</p>
+                    <p class="text-xs text-gray-400">Current Step</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Alert -->
+    @if (submitSuccess != null)
+    {
+        <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+            <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <p class="text-sm font-medium text-emerald-800">@submitSuccess</p>
+        </div>
+    }
+
+    <!-- Ready for Submission -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Verified Batches Ready for Submission</h3>
+                <p class="text-sm text-gray-500">Select a batch and configure integration options</p>
+            </div>
+        </div>
+
+        @if (readyBatches != null && ((IEnumerable<dynamic>)readyBatches!).Any())
+        {
+            @foreach (var batch in readyBatches!)
+            {
+                <div class="border border-gray-200 rounded-xl p-6 mb-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Batch Info -->
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-800 mb-3">Batch Details</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-500">Batch ID</span><span class="font-mono font-semibold text-gray-800">@batch.BatchId</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Source</span><span class="font-semibold text-gray-800">@batch.DataSourceName</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Target Table</span><span class="font-mono font-semibold text-gray-800">@batch.TargetTable</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Total Rows</span><span class="font-semibold text-gray-800">@batch.TotalRows</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Valid Rows</span><span class="font-semibold text-emerald-600">@batch.ValidRows</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Error Rows</span><span class="font-semibold text-red-500">@batch.ErrorRows</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Form -->
+                        <div>
+                            <form method="post" asp-action="SubmitBatch" asp-controller="Staff">
+                                <input type="hidden" name="batchId" value="@batch.BatchId" />
+
+                                <h4 class="text-sm font-bold text-gray-800 mb-3">Integration Options</h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Load Mode</label>
+                                        <select name="loadMode" class="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''">
+                                            <option value="Append">Append &mdash; Add new rows</option>
+                                            <option value="Overwrite">Overwrite &mdash; Replace all data</option>
+                                            <option value="Upsert">Upsert &mdash; Update existing, insert new</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Notes (Optional)</label>
+                                        <textarea name="notes" rows="2" placeholder="Add notes..."
+                                                  class="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 resize-none" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''"></textarea>
+                                    </div>
+                                    <button type="submit"
+                                            class="w-full px-6 py-2.5 text-white rounded-lg text-sm font-bold transition-colors shadow-lg" style="background-color: #088395;" onmouseover="this.style.backgroundColor='#09637E'" onmouseout="this.style.backgroundColor='#088395'">
+                                         Submit for Integration
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-sm text-gray-400 text-center py-6">No verified batches ready for submission. Validate data in the Verify step first.</p>
+        }
+    </div>
+
+    <!-- Submission History -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-5">Submission History</h3>
+        @if (submissions.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Batch ID</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Source</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Target</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Rows</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Mode</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Submitted</th>
+                            <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sub in submissions)
+                        {
+                            var subColor = sub.Status == "Integrated" ? "text-green-600 bg-green-50" :
+                                           sub.Status == "Submitted" ? "text-blue-600 bg-blue-50" :
+                                           sub.Status == "Failed" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100";
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@sub.BatchId</td>
+                                <td class="py-3 px-4 text-gray-600">@sub.DataSource?.SourceName</td>
+                                <td class="py-3 px-4 font-mono text-gray-500">@sub.TargetTable</td>
+                                <td class="py-3 px-4 text-gray-600">@sub.ValidRows / @sub.TotalRows</td>
+                                <td class="py-3 px-4 text-gray-500">@sub.LoadMode</td>
+                                <td class="py-3 px-4 text-gray-500">@sub.Submitted_at?.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @subColor">@sub.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-sm text-gray-400 text-center py-6">No submissions yet.</p>
+        }
+    </div>
+
+    <!-- Back Button -->
+    <div class="flex items-center justify-start mt-6">
+        <a href="@Url.Action("StaffNav", "Staff", new { section = "verify" })"
+           class="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors no-underline">
+            &larr; Back to Verify
+        </a>
+    </div>
+</div>

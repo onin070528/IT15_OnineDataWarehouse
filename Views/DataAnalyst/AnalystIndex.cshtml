@@ -1,0 +1,237 @@
+@using it15_webproject_mvc.Models
+@{
+    var totalUsers = (int)(ViewData["TotalUsers"] ?? 0);
+    var activeUsers = (int)(ViewData["ActiveUsers"] ?? 0);
+    var inactiveUsers = (int)(ViewData["InactiveUsers"] ?? 0);
+    var todayLogins = (int)(ViewData["TodayLogins"] ?? 0);
+
+    var totalSources = (int)(ViewData["TotalSources"] ?? 0);
+    var activeSources = (int)(ViewData["ActiveSources"] ?? 0);
+    var totalSubmissions = (int)(ViewData["TotalSubmissions"] ?? 0);
+    var pendingSubmissions = (int)(ViewData["PendingSubmissions"] ?? 0);
+    var integratedSubmissions = (int)(ViewData["IntegratedSubmissions"] ?? 0);
+    var failedSubmissions = (int)(ViewData["FailedSubmissions"] ?? 0);
+
+    var totalAuditLogs = (int)(ViewData["TotalAuditLogs"] ?? 0);
+    var todayAuditLogs = (int)(ViewData["TodayAuditLogs"] ?? 0);
+    var totalWarehouseRows = (int)(ViewData["TotalWarehouseRows"] ?? 0);
+
+    var recentLogs = ViewData["RecentLogs"] as List<AuditLog> ?? new List<AuditLog>();
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- OVERVIEW HEADER -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <h2 class="text-xl font-bold" style="color: #09637E;">Data Analyst Dashboard</h2>
+        <p class="text-sm text-gray-500 mt-1 mb-6">Overview of security, ETL pipelines, and historical data across the warehouse.</p>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            <!-- Active Users -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #088395, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@activeUsers</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Active Users</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@todayLogins logins today</p>
+            </div>
+
+            <!-- ETL Sources -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #09637E, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@activeSources</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Active Sources</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@totalSources total configured</p>
+            </div>
+
+            <!-- Submissions -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #7AB2B2, #088395);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@integratedSubmissions</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Integrated</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@pendingSubmissions pending · @failedSubmissions failed</p>
+            </div>
+
+            <!-- Warehouse Records -->
+            <div class="rounded-2xl p-5 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #09637E, #7AB2B2);">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-3xl font-bold">@totalWarehouseRows.ToString("N0")</p>
+                        <p class="text-sm mt-1" style="color: #EBF4F6;">Warehouse Records</p>
+                    </div>
+                    <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    </svg>
+                </div>
+                <p class="text-xs mt-2" style="color: #EBF4F6;">@totalAuditLogs audit entries</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK ACCESS -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <h3 class="text-lg font-bold mb-5" style="color: #09637E;">Quick Access</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
+
+            <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "security" })"
+               class="group border-2 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="border-color: #7AB2B2;">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:text-white transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Security</h4>
+                <p class="text-xs text-gray-400 mt-1">Monitor user access &amp; activity</p>
+            </a>
+
+            <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "etl" })"
+               class="group border-2 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="border-color: #7AB2B2;">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:text-white transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">ETL Oversight</h4>
+                <p class="text-xs text-gray-400 mt-1">Monitor pipelines &amp; submissions</p>
+            </a>
+
+            <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "warehouse" })"
+               class="group border-2 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="border-color: #7AB2B2;">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:text-white transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Warehouse Query</h4>
+                <p class="text-xs text-gray-400 mt-1">Browse &amp; analyze stored data</p>
+            </a>
+
+            <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "cleansing" })"
+               class="group border-2 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="border-color: #7AB2B2;">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:text-white transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Data Quality</h4>
+                <p class="text-xs text-gray-400 mt-1">Identify anomalies &amp; issues</p>
+            </a>
+
+            <a href="@Url.Action("AnalystNav", "DataAnalyst", new { section = "history" })"
+               class="group border-2 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all no-underline cursor-pointer" style="border-color: #7AB2B2;">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:text-white transition-colors" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-gray-900">Historical Data</h4>
+                <p class="text-xs text-gray-400 mt-1">Trends &amp; audit trail</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- SECURITY SNAPSHOT & RECENT ACTIVITY -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Security Snapshot -->
+        <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Security Snapshot</h3>
+                    <p class="text-xs text-gray-400">User access overview</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                    <span class="text-sm text-gray-600">Total Users</span>
+                    <span class="text-sm font-bold text-gray-900">@totalUsers</span>
+                </div>
+                <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                    <span class="text-sm text-gray-600">Active Accounts</span>
+                    <span class="text-sm font-bold text-green-600">@activeUsers</span>
+                </div>
+                <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                    <span class="text-sm text-gray-600">Inactive / Disabled</span>
+                    <span class="text-sm font-bold text-red-500">@inactiveUsers</span>
+                </div>
+                <div class="flex items-center justify-between py-3">
+                    <span class="text-sm text-gray-600">Logins Today</span>
+                    <span class="text-sm font-bold" style="color: #088395;">@todayLogins</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">Recent Activity</h3>
+                    <p class="text-xs text-gray-400">Latest audit log entries</p>
+                </div>
+            </div>
+            @if (recentLogs.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var log in recentLogs)
+                    {
+                        var iconColor = log.Action switch
+                        {
+                            "Source Added" => "bg-purple-100 text-purple-600",
+                            "Source Deleted" => "bg-red-100 text-red-600",
+                            "Data Pulled" => "bg-emerald-100 text-emerald-600",
+                            "Batch Validated" => "bg-blue-100 text-blue-600",
+                            "Batch Submitted" => "bg-indigo-100 text-indigo-600",
+                            _ => "bg-gray-100 text-gray-600"
+                        };
+                        <div class="flex items-start gap-3 py-2">
+                            <span class="w-8 h-8 rounded-full @iconColor flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                @(log.PerformedByUser?.Full_name?.Substring(0, Math.Min(2, log.PerformedByUser?.Full_name?.Length ?? 0)).ToUpper() ?? "??")
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-gray-800">
+                                    <span class="font-semibold">@(log.PerformedByUser?.Full_name ?? "Unknown")</span>
+                                    <span class="text-gray-500"> — @log.Action</span>
+                                </p>
+                                <p class="text-xs text-gray-400 truncate">@(log.Details ?? log.EntityName ?? "—")</p>
+                                <p class="text-xs text-gray-300 mt-0.5">@log.Performed_at.ToString("MMM dd, yyyy hh:mm tt")</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">No recent activity.</p>
+            }
+        </div>
+    </div>
+</div>

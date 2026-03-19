@@ -1,0 +1,214 @@
+@using it15_webproject_mvc.Models
+@{
+    var sources = ViewData["AllSources"] as List<DataSource> ?? new List<DataSource>();
+    var testResult = TempData["TestResult"] as string;
+    var testMessage = TempData["TestMessage"] as string;
+    var testSourceId = TempData["TestSourceId"] as int?;
+}
+
+<div class="p-8 bg-gray-100 min-h-full">
+
+    <!-- Success/Error Alerts -->
+    @if (testResult != null)
+    {
+        <div class="mb-6 p-4 rounded-xl flex items-center gap-3 @(testResult == "success" ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200")">
+            @if (testResult == "success")
+            {
+                <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <p class="text-sm font-medium text-emerald-800">@testMessage</p>
+            }
+            else
+            {
+                <span class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </span>
+                <p class="text-sm font-medium text-red-800">@testMessage</p>
+            }
+        </div>
+    }
+
+    <!-- ADD NEW API SOURCE -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Add New API Source</h3>
+                <p class="text-sm text-gray-500">Connect to a company API to pull data into the warehouse</p>
+            </div>
+        </div>
+
+        <form method="post" asp-action="AddSource" asp-controller="Staff">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Source Name</label>
+                    <input type="text" name="sourceName" required placeholder="e.g., Company CRM API"
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" style="--tw-ring-color: #7AB2B2;" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''" />
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">API Base URL</label>
+                    <input type="url" name="apiBaseUrl" required placeholder="https://api.company.com"
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''" />
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">API Endpoint</label>
+                    <input type="text" name="apiEndpoint" required placeholder="/v1/sales"
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''" />
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Authentication Method</label>
+                    <select name="authMethod" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''">
+                        <option value="None">None (Public API)</option>
+                        <option value="ApiKey">API Key (X-API-Key header)</option>
+                        <option value="Bearer">Bearer Token</option>
+                        <option value="Basic">Basic Auth</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">API Key / Token</label>
+                    <input type="text" name="apiKey" placeholder="Enter API key or token (leave empty if None)"
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''" />
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Target Staging Table</label>
+                    <input type="text" name="targetTable" required placeholder="e.g., stg_sales_data"
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" onfocus="this.style.boxShadow='0 0 0 2px #7AB2B2'" onblur="this.style.boxShadow=''" />
+                </div>
+            </div>
+
+            <div class="mt-6 flex items-center justify-end gap-4">
+                <button type="submit"
+                        class="px-6 py-2.5 text-white rounded-lg text-sm font-semibold transition-colors" style="background-color: #088395;" onmouseover="this.style.backgroundColor='#09637E'" onmouseout="this.style.backgroundColor='#088395'">
+                    + Add Source
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- CONFIGURED API SOURCES -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Configured API Sources</h3>
+                <p class="text-sm text-gray-500 mt-1">@sources.Count source(s) configured</p>
+            </div>
+        </div>
+
+        @if (sources.Any())
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                @foreach (var source in sources)
+                {
+                    <div class="border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all" onmouseover="this.style.borderColor='#7AB2B2'" onmouseout="this.style.borderColor=''">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #EBF4F6; color: #088395;">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                    </svg>
+                                </span>
+                                <h4 class="text-sm font-bold text-gray-900">@source.SourceName</h4>
+                            </div>
+                            <span class="text-xs font-medium px-2 py-1 rounded-full
+                                @(source.Status == "Active" ? "text-green-600 bg-green-50" :
+                                  source.Status == "Error" ? "text-red-600 bg-red-50" : "text-gray-500 bg-gray-100")">
+                                @source.Status
+                            </span>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="space-y-2 text-xs text-gray-500 mb-4">
+                            <div class="flex justify-between">
+                                <span>URL</span>
+                                <span class="font-mono text-gray-700 truncate ml-2 max-w-[180px]" title="@source.ApiBaseUrl@source.ApiEndpoint">@source.ApiBaseUrl@source.ApiEndpoint</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Auth</span>
+                                <span class="font-semibold text-gray-700">@source.AuthMethod</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Target</span>
+                                <span class="font-mono text-gray-700">@source.TargetTable</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Last Sync</span>
+                                <span class="text-gray-700">@(source.Last_sync?.ToString("MMM dd, yyyy hh:mm tt") ?? "Never")</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center gap-2">
+                            <form method="post" asp-action="TestConnection" asp-controller="Staff" class="flex-1">
+                                <input type="hidden" name="dataSourceId" value="@source.DataSourceID" />
+                                <button type="submit"
+                                        class="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">
+                                    Test
+                                </button>
+                            </form>
+                            <form method="post" asp-action="PullFromApi" asp-controller="Staff" class="flex-1">
+                                <input type="hidden" name="dataSourceId" value="@source.DataSourceID" />
+                                <button type="submit"
+                                        class="w-full px-3 py-2 text-xs font-semibold rounded-lg text-white transition-colors" style="background-color: #088395;" onmouseover="this.style.backgroundColor='#09637E'" onmouseout="this.style.backgroundColor='#088395'">
+                                    Pull Data
+                                </button>
+                            </form>
+                            <form method="post" asp-action="DeleteSource" asp-controller="Staff">
+                                <input type="hidden" name="dataSourceId" value="@source.DataSourceID" />
+                                <button type="submit"
+                                        class="px-3 py-2 text-xs font-semibold rounded-lg border border-red-300 text-red-500 hover:bg-red-50 transition-colors"
+                                        onclick="return confirm('Delete this source?');">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <p class="text-sm font-medium">No API sources configured yet</p>
+                <p class="text-xs mt-1">Add your first API source above to start pulling data</p>
+            </div>
+        }
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mt-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-5">How API Integration Works</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="text-center">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-sm font-bold" style="background-color: #EBF4F6; color: #088395;">1</div>
+                <h4 class="text-sm font-bold text-gray-800">Configure</h4>
+                <p class="text-xs text-gray-400 mt-1">Add the company API URL, endpoint, and authentication key</p>
+            </div>
+            <div class="text-center">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-sm font-bold" style="background-color: #EBF4F6; color: #088395;">2</div>
+                <h4 class="text-sm font-bold text-gray-800">Pull</h4>
+                <p class="text-xs text-gray-400 mt-1">Click "Pull Data" to fetch records from the API into staging</p>
+            </div>
+            <div class="text-center">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-sm font-bold" style="background-color: #EBF4F6; color: #088395;">3</div>
+                <h4 class="text-sm font-bold text-gray-800">Verify</h4>
+                <p class="text-xs text-gray-400 mt-1">Review and validate the pulled data for quality</p>
+            </div>
+            <div class="text-center">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-sm font-bold" style="background-color: #EBF4F6; color: #088395;">4</div>
+                <h4 class="text-sm font-bold text-gray-800">Submit</h4>
+                <p class="text-xs text-gray-400 mt-1">Submit verified data for warehouse integration</p>
+            </div>
+        </div>
+    </div>
+</div>

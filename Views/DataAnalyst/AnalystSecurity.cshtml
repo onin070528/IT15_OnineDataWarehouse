@@ -1,0 +1,227 @@
+@using it15_webproject_mvc.Models
+@{
+    var users = ViewData["AllUsers"] as List<User> ?? new List<User>();
+    var totalUsers = (int)(ViewData["TotalUsers"] ?? 0);
+    var activeUsers = (int)(ViewData["ActiveUsers"] ?? 0);
+    var inactiveUsers = (int)(ViewData["InactiveUsers"] ?? 0);
+    var recentLogins = (int)(ViewData["RecentLogins"] ?? 0);
+    var securityLogs = ViewData["SecurityLogs"] as List<AuditLog> ?? new List<AuditLog>();
+}
+
+<div class="p-8 min-h-full" style="background-color: #EBF4F6;">
+
+    <!-- Security Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">@totalUsers</p>
+                    <p class="text-xs text-gray-400">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: #09637E;">@activeUsers</p>
+                    <p class="text-xs text-gray-400">Active</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #7AB2B2;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-red-500">@inactiveUsers</p>
+                    <p class="text-xs text-gray-400">Inactive</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-6" style="border: 1px solid #7AB2B2;">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: #088395;">@recentLogins</p>
+                    <p class="text-xs text-gray-400">Logins (24h)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Access Table -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #088395;">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold" style="color: #09637E;">User Access Overview</h3>
+                    <p class="text-sm text-gray-500">Monitor all user accounts, roles, and last login activity</p>
+                </div>
+            </div>
+            <input type="text" placeholder="Search users..."
+                   class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2" style="--tw-ring-color: #7AB2B2;" />
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">User</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Email</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Role</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Organization</th>
+                        <th class="text-left py-3 px-4 text-gray-500 font-semibold">Last Login</th>
+                        <th class="text-center py-3 px-4 text-gray-500 font-semibold">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (users.Any())
+                    {
+                        @foreach (var u in users)
+                        {
+                            var initials = u.Full_name.Length >= 2 ? u.Full_name.Substring(0, 2).ToUpper() : u.Full_name.ToUpper();
+                            var roleName = u.Role?.RoleName ?? "Staff";
+                            var orgNameDisplay = u.Organization?.OrganizationName ?? "—";
+                            var statusColor = u.Account_status == "Active" ? "text-green-600 bg-green-50" : "text-gray-500 bg-gray-100";
+                            var lastLoginDisplay = u.Last_login.HasValue
+                                ? u.Last_login.Value.ToString("MMM dd, yyyy hh:mm tt")
+                                : "Never";
+
+                            var roleColor = roleName switch
+                            {
+                                "SuperAdmin" => "text-red-700 bg-red-50",
+                                "UserAdmin" => "text-purple-700 bg-purple-50",
+                                "DataAnalyst" => "text-blue-700 bg-blue-50",
+                                "Manager" => "text-amber-700 bg-amber-50",
+                                _ => "text-gray-700 bg-gray-50"
+                            };
+
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background-color: #EBF4F6; color: #09637E;">
+                                            @initials
+                                        </span>
+                                        <div>
+                                            <span class="font-semibold text-gray-800 block">@u.Full_name</span>
+                                            <span class="text-xs text-gray-400">@@@u.Username</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-gray-600">@u.Email</td>
+                                <td class="py-3 px-4">
+                                    <span class="text-xs font-semibold px-2 py-1 rounded-full @roleColor">@roleName</span>
+                                </td>
+                                <td class="py-3 px-4 text-gray-600">@orgNameDisplay</td>
+                                <td class="py-3 px-4 text-gray-500 text-xs">@lastLoginDisplay</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-medium px-2.5 py-1 rounded-full @statusColor">
+                                        @u.Account_status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-400 text-sm">No users found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Security Audit Logs -->
+    <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: #EBF4F6; color: #09637E;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold" style="color: #09637E;">Security Audit Trail</h3>
+                <p class="text-sm text-gray-500">User-related actions and access events</p>
+            </div>
+        </div>
+
+        @if (securityLogs.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Date &amp; Time</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">User</th>
+                            <th class="text-center py-3 px-4 text-gray-500 font-semibold">Action</th>
+                            <th class="text-left py-3 px-4 text-gray-500 font-semibold">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in securityLogs)
+                        {
+                            var actionColor = log.Action switch
+                            {
+                                "User Updated" => "text-amber-600 bg-amber-50",
+                                "User Created" => "text-green-600 bg-green-50",
+                                "Login" => "text-blue-600 bg-blue-50",
+                                "Logout" => "text-gray-600 bg-gray-100",
+                                _ => "text-gray-600 bg-gray-50"
+                            };
+
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 text-gray-500 text-xs whitespace-nowrap">
+                                    @log.Performed_at.ToString("MMM dd, yyyy")<br />
+                                    <span class="text-gray-400">@log.Performed_at.ToString("hh:mm:ss tt")</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-sm font-medium text-gray-700">@(log.PerformedByUser?.Full_name ?? "System")</span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full @actionColor">@log.Action</span>
+                                </td>
+                                <td class="py-3 px-4 text-xs text-gray-500 max-w-xs">
+                                    <span class="truncate block max-w-[350px]" title="@log.Details">@(log.Details ?? "—")</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-8 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <p class="text-sm font-medium">No security events recorded yet</p>
+            </div>
+        }
+    </div>
+</div>
