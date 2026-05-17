@@ -37,6 +37,7 @@ namespace it15_webproject_mvc.Data
         // === Audit & System ===
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<SystemLog> SystemLogs { get; set; }
+        public DbSet<SecurityLog> SecurityLogs { get; set; }
         public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
 
         // === Billing ===
@@ -114,6 +115,12 @@ namespace it15_webproject_mvc.Data
                 .WithMany()
                 .HasForeignKey(sl => sl.UserID)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SecurityLog>()
+                .HasOne(sl => sl.User)
+                .WithMany()
+                .HasForeignKey(sl => sl.UserID)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // === SYSTEM CONFIGURATION ===
             modelBuilder.Entity<SystemConfiguration>()

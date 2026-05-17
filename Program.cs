@@ -37,6 +37,7 @@ builder.Services.AddHttpClient<PayMongoService>(client =>
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IDataCleansingService, DataCleansingService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IEmailSender, EmailSender>();
 
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -45,7 +46,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.LoginPath = "/Home/Login";
     options.LogoutPath = "/auth/logout";
     options.AccessDeniedPath = "/Home/Login?error=Access denied.";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
     options.SlidingExpiration = true;
 });
 

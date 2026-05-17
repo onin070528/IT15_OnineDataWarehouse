@@ -28,6 +28,17 @@ namespace it15_webproject_mvc.Controllers
             return View();
         }
 
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        public IActionResult ResetPassword(string? token)
+        {
+            ViewData["Token"] = token ?? string.Empty;
+            return View();
+        }
+
         public IActionResult Register()
         {
             return View();

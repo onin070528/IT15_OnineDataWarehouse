@@ -91,7 +91,7 @@ namespace it15_webproject_mvc.Models
         [Required, MaxLength(25)]
         public string Full_name { get; set; } = string.Empty;
 
-        [Required, MaxLength(30)]
+        [Required, MaxLength(100)]
         public string Email { get; set; } = string.Empty;
 
         [Required, MaxLength(255)]
@@ -99,6 +99,15 @@ namespace it15_webproject_mvc.Models
 
         [Required, MaxLength(30)]
         public string Account_status { get; set; } = "Active";
+
+        public int FailedLoginAttempts { get; set; } = 0;
+
+        public DateTime? LockoutUntil { get; set; }
+
+        [MaxLength(200)]
+        public string? TwoFactorCodeHash { get; set; }
+
+        public DateTime? TwoFactorCodeExpiresAt { get; set; }
 
         public DateTime? Last_login { get; set; }
 
@@ -130,6 +139,28 @@ namespace it15_webproject_mvc.Models
         public string Action { get; set; } = string.Empty;
 
         public DateTime Action_timestamp { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey(nameof(UserID))]
+        public User? User { get; set; }
+    }
+
+    public class SecurityLog
+    {
+        [Key]
+        public int SecurityLogID { get; set; }
+
+        public int? UserID { get; set; }
+
+        [Required, MaxLength(100)]
+        public string EventType { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? Details { get; set; }
+
+        [MaxLength(100)]
+        public string? IpAddress { get; set; }
+
+        public DateTime Created_at { get; set; } = DateTime.UtcNow;
 
         [ForeignKey(nameof(UserID))]
         public User? User { get; set; }

@@ -16,5 +16,129 @@
         @RenderBody()
     </div>
 
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div id="idle-timeout-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/40 p-4">
+            <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 p-6">
+                <h3 class="text-lg font-bold text-gray-900">Session Timeout Warning</h3>
+                <p class="mt-2 text-sm text-gray-600">
+                    No activity detected. You will be logged out in
+                    <span id="idle-timeout-countdown" class="font-bold text-red-600">2:00</span>.
+                </p>
+                <div class="mt-5 flex items-center justify-end gap-3">
+                    <button type="button" id="idle-logout-now"
+                            class="px-4 py-2 rounded-lg text-sm font-semibold border border-red-300 text-red-600 hover:bg-red-50 transition-colors">
+                        Logout Now
+                    </button>
+                    <button type="button" id="idle-stay-logged-in"
+                            class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                            style="background-color: #088395;"
+                            onmouseover="this.style.backgroundColor='#09637E'"
+                            onmouseout="this.style.backgroundColor='#088395'">
+                        Stay Logged In
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                const idleLimitMs = 5 * 60 * 1000;
+                const warningAtMs = 3 * 60 * 1000;
+                const keepAliveMs = 2 * 60 * 1000;
+
+                const modal = document.getElementById('idle-timeout-modal');
+                const countdownEl = document.getElementById('idle-timeout-countdown');
+                const stayBtn = document.getElementById('idle-stay-logged-in');
+                const logoutBtn = document.getElementById('idle-logout-now');
+
+                let lastActivity = Date.now();
+                let lastPing = Date.now();
+                let warningVisible = false;
+
+                function formatCountdown(msLeft) {
+                    const totalSeconds = Math.max(0, Math.ceil(msLeft / 1000));
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    return minutes + ':' + String(seconds).padStart(2, '0');
+                }
+
+                function showWarning(msLeft) {
+                    if (!modal || !countdownEl) return;
+                    if (!warningVisible) {
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                        warningVisible = true;
+                    }
+                    countdownEl.textContent = formatCountdown(msLeft);
+                }
+
+                function hideWarning() {
+                    if (!modal) return;
+                    if (warningVisible) {
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                        warningVisible = false;
+                    }
+                }
+
+                function logoutNow() {
+                    window.location.href = '/auth/logout';
+                }
+
+                function sendKeepAlive() {
+                    return fetch('/auth/ping', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).catch(function () { });
+                }
+
+                function markActivity() {
+                    lastActivity = Date.now();
+                    hideWarning();
+                }
+
+                ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function (eventName) {
+                    window.addEventListener(eventName, markActivity, { passive: true });
+                });
+
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', logoutNow);
+                }
+
+                if (stayBtn) {
+                    stayBtn.addEventListener('click', function () {
+                        markActivity();
+                        lastPing = Date.now();
+                        sendKeepAlive();
+                    });
+                }
+
+                setInterval(function () {
+                    const now = Date.now();
+                    const idleTime = now - lastActivity;
+
+                    if (idleTime >= idleLimitMs) {
+                        logoutNow();
+                        return;
+                    }
+
+                    if (idleTime >= warningAtMs) {
+                        showWarning(idleLimitMs - idleTime);
+                    } else {
+                        hideWarning();
+                        if ((now - lastPing) >= keepAliveMs) {
+                            lastPing = now;
+                            sendKeepAlive();
+                        }
+                    }
+                }, 1000);
+            })();
+        </script>
+    }
+
 </body>
 </html>

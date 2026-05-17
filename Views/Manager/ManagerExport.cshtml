@@ -47,7 +47,7 @@
             </span>
             <div>
                 <p class="text-sm font-semibold" style="color: #09637E;">Export Guide</p>
-                <p class="text-xs" style="color: #088395;">Only integrated and submitted submissions are shown here. Use the export button to download data as CSV.</p>
+                <p class="text-xs" style="color: #088395;">Only integrated and submitted submissions are shown here. Use the export button to download data as PDF.</p>
             </div>
         </div>
     </div>
@@ -88,19 +88,30 @@
                             var color = sub.Status == "Integrated" ? "text-green-600 bg-green-50" : "text-amber-600 bg-amber-50";
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                 <td class="py-3 px-4 font-mono text-xs font-semibold text-gray-800">@sub.BatchId</td>
-                                <td class="py-3 px-4 text-gray-600">@(sub.DataSource?.SourceName ?? "—")</td>
+                                <td class="py-3 px-4 text-gray-600">@(sub.DataSource?.SourceName ?? "-")</td>
                                 <td class="py-3 px-4 font-mono text-xs text-gray-500">@sub.TargetTable</td>
                                 <td class="py-3 px-4 text-gray-600"><span class="text-green-600 font-semibold">@sub.ValidRows</span>/@sub.TotalRows</td>
                                 <td class="py-3 px-4 text-gray-500 text-xs">@sub.LoadMode</td>
                                 <td class="py-3 px-4 text-gray-500 text-xs">@sub.Created_at.ToString("MMM dd, yyyy")</td>
                                 <td class="py-3 px-4 text-center"><span class="text-xs font-medium px-2.5 py-1 rounded-full @color">@sub.Status</span></td>
                                 <td class="py-3 px-4 text-center">
-                                    <button class="px-3 py-1.5 text-white text-xs font-semibold rounded-lg transition-colors" style="background-color: #088395;"
-                                            title="Export as CSV">
+                                    <button type="button"
+                                            class="px-3 py-1.5 text-white text-xs font-semibold rounded-lg transition-colors"
+                                            style="background-color: #088395;"
+                                            title="Export as PDF"
+                                            onclick="exportSubmissionPdf(this)"
+                                            data-batchid="@sub.BatchId"
+                                            data-source="@(sub.DataSource?.SourceName ?? "-")"
+                                            data-targettable="@sub.TargetTable"
+                                            data-validrows="@sub.ValidRows"
+                                            data-totalrows="@sub.TotalRows"
+                                            data-loadmode="@sub.LoadMode"
+                                            data-date="@sub.Created_at.ToString("MMM dd, yyyy")"
+                                            data-status="@sub.Status">
                                         <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
-                                        CSV
+                                        PDF
                                     </button>
                                 </td>
                             </tr>
@@ -115,3 +126,48 @@
         </div>
     </div>
 </div>
+
+<script>
+    function exportSubmissionPdf(button) {
+        var batchId = button.dataset.batchid || "-";
+        var source = button.dataset.source || "-";
+        var targetTable = button.dataset.targettable || "-";
+        var validRows = button.dataset.validrows || "0";
+        var totalRows = button.dataset.totalrows || "0";
+        var loadMode = button.dataset.loadmode || "-";
+        var createdDate = button.dataset.date || "-";
+        var status = button.dataset.status || "-";
+
+        var html = '<!DOCTYPE html><html><head><title>Submission Export - ' + batchId + '</title><style>' +
+            'body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#333}' +
+            'h1{color:#09637E;font-size:22px;margin-bottom:4px}' +
+            '.meta{color:#888;font-size:10px;margin-bottom:20px}' +
+            'table{width:100%;border-collapse:collapse;margin-top:8px}' +
+            'th{background:#088395;color:white;padding:8px;text-align:left;font-size:11px;width:180px}' +
+            'td{padding:8px;border-bottom:1px solid #e5e7eb;font-size:11px}' +
+            'tr:nth-child(even){background:#f9fafb}' +
+            '</style></head><body>' +
+            '<h1>Submission Export</h1>' +
+            '<p class="meta">Generated on ' + new Date().toLocaleString() + '</p>' +
+            '<table>' +
+            '<tbody>' +
+            '<tr><th>Batch ID</th><td>' + batchId + '</td></tr>' +
+            '<tr><th>Source</th><td>' + source + '</td></tr>' +
+            '<tr><th>Target Table</th><td>' + targetTable + '</td></tr>' +
+            '<tr><th>Rows</th><td>' + validRows + '/' + totalRows + '</td></tr>' +
+            '<tr><th>Mode</th><td>' + loadMode + '</td></tr>' +
+            '<tr><th>Date</th><td>' + createdDate + '</td></tr>' +
+            '<tr><th>Status</th><td>' + status + '</td></tr>' +
+            '</tbody>' +
+            '</table>' +
+            '</body></html>';
+
+        var printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+        setTimeout(function () { printWindow.print(); }, 300);
+    }
+</script>
+            

@@ -1,9 +1,29 @@
-﻿@{
+﻿@inject IConfiguration Configuration
+
+@{
     ViewData["Title"] = "Login";
     var e = Context.Request.Query["error"].ToString();
     var s = Context.Request.Query["success"].ToString();
+    var lockoutUntilValue = Context.Request.Query["lockoutUntil"].ToString();
     string? ErrorMessage = null;
     string? SuccessMessage = null;
+    DateTime? lockoutUntil = null;
+    int? lockoutMinutes = null;
+    var loginUsername = TempData["Login.Username"]?.ToString() ?? string.Empty;
+    
+    var siteKey = Configuration["ReCaptchaSettings:SiteKey"];
+
+
+    if (!string.IsNullOrEmpty(lockoutUntilValue)
+        && DateTime.TryParse(lockoutUntilValue, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsedLockout))
+    {
+        lockoutUntil = parsedLockout.ToUniversalTime();
+        var remaining = lockoutUntil.Value - DateTime.UtcNow;
+        if (remaining > TimeSpan.Zero)
+        {
+            lockoutMinutes = (int)Math.Ceiling(remaining.TotalMinutes);
+        }
+    }
 
     if (!string.IsNullOrEmpty(e))
     {
@@ -11,6 +31,18 @@
             ErrorMessage = "Invalid username or password.";
         else if (string.Equals(e, "missing", System.StringComparison.OrdinalIgnoreCase))
             ErrorMessage = "Please enter username and password.";
+        else if (string.Equals(e, "invalid_username", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Please enter a valid username or email.";
+        else if (string.Equals(e, "recaptcha", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Please complete the reCAPTCHA verification.";
+        else if (string.Equals(e, "2fa_email_failed", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "We couldn't send the verification code. Please contact support.";
+        else if (string.Equals(e, "lockout", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = lockoutMinutes.HasValue
+                ? $"Too many invalid attempts. Try again in {lockoutMinutes} minute(s)."
+                : "Too many invalid attempts. Try again later.";
+        else if (string.Equals(e, "superadmin_lockdown", System.StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "SuperAdmin access is temporarily locked. Please contact support.";
         else
             ErrorMessage = e;
     }
@@ -19,7 +51,25 @@
     {
         SuccessMessage = "Account created successfully! You can now sign in.";
     }
+    else if (!string.IsNullOrEmpty(s) && string.Equals(s, "password_reset", System.StringComparison.OrdinalIgnoreCase))
+    {
+        SuccessMessage = "Password reset successful. You can now sign in with your new password.";
+    }
 }
+
+
+<script type="text/javascript">
+  var onloadCallback = function() {
+      grecaptcha.render('html_element', {
+            'sitekey' : '@siteKey'
+          });
+  };
+</script>
+
+<script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit"
+        async defer>
+</script>
+
 
 <div class="min-h-screen flex font-[Inter] bg-white">
 
@@ -73,7 +123,7 @@
                 </div>
             }
 
-            <form method="post" action="/auth/login" class="space-y-6">
+            <form id="loginForm" method="post" action="/auth/login" class="space-y-6" onsubmit="return validateRecaptcha()">
                 @Html.AntiForgeryToken()
 
                 
@@ -84,6 +134,7 @@
                     <input name="username"
                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
                            placeholder="Enter your username"
+                           value="@loginUsername"
                            required />
                 </div>
 
@@ -104,10 +155,16 @@
                             👁
                         </button>
                     </div>
+                    <div class="mt-2 text-right">
+                        <a href="@Url.Action("ForgotPassword", "Home")" class="text-sm text-[#088395] hover:underline">
+                            Forgot password?
+                        </a>
+                    </div>
                 </div>
 
-                <button type="submit"
-                        class="w-full py-3 rounded-lg bg-gradient-to-r from-[#7AB2B2] to-[#088395] text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition">
+                <button id="loginButton" type="submit"
+                        class="w-full py-3 rounded-lg bg-gradient-to-r from-[#7AB2B2] to-[#088395] text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        @(lockoutMinutes.HasValue ? "disabled" : string.Empty)>
                     Sign In →
                 </button>
 
@@ -118,6 +175,12 @@
                     </a>
                 </div>
 
+                <div class="row">
+                    <div id="html_element" class="g-recaptcha"></div>
+                </div>
+
+               
+
             </form>
         </div>
     </div>
@@ -127,5 +190,38 @@
     function togglePassword() {
         const input = document.getElementById("passwordInput");
         input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function validateRecaptcha() {
+        if (typeof grecaptcha === "undefined") {
+            return true;
+        }
+
+        const response = grecaptcha.getResponse();
+        if (!response) {
+            alert("Please complete the reCAPTCHA verification.");
+            return false;
+        }
+
+        return true;
+    }
+
+    const lockoutUntil = "@(lockoutUntil?.ToString("O") ?? string.Empty)";
+    if (lockoutUntil) {
+        const button = document.getElementById("loginButton");
+        const updateLockout = () => {
+            const remaining = new Date(lockoutUntil).getTime() - Date.now();
+            if (remaining <= 0) {
+                button.disabled = false;
+                button.textContent = "Sign In →";
+                return;
+            }
+            const minutes = Math.max(1, Math.ceil(remaining / 60000));
+            button.disabled = true;
+            button.textContent = `Locked (${minutes} min)`;
+        };
+
+        updateLockout();
+        setInterval(updateLockout, 15000);
     }
 </script>

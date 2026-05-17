@@ -24,6 +24,7 @@ namespace it15_webproject_mvc.Data
             EnsureNewTables(context);
             EnsureRoleNewColumns(context);
             EnsureOrganizationNewColumns(context);
+            EnsureUserNewColumns(context);
 
             logger?.LogInformation("DbInitializer: Existing users count = {Count}", context.Users.Count());
 
@@ -367,10 +368,14 @@ namespace it15_webproject_mvc.Data
                     new() { ConfigKey = "DefaultLoadMode", ConfigValue = "Append", Description = "Default load mode for warehouse integration" },
                     new() { ConfigKey = "HistoricalRetentionDays", ConfigValue = "365", Description = "Number of days to retain historical data snapshots" },
                     new() { ConfigKey = "AuditLogRetentionDays", ConfigValue = "730", Description = "Number of days to retain audit logs" },
+                    new() { ConfigKey = "SuperAdminLockdownEnabled", ConfigValue = "false", Description = "Block SuperAdmin access during incident response" },
+                    new() { ConfigKey = "SuperAdminLockdownReason", ConfigValue = "", Description = "Reason for SuperAdmin lockdown" },
                 };
                 context.SystemConfigurations.AddRange(configs);
                 context.SaveChanges();
             }
+
+            EnsureSecurityConfigurations(context);
         }
 
         private static void EnsureWarehouseTable(ApplicationDbContext context)
@@ -485,6 +490,9 @@ namespace it15_webproject_mvc.Data
                 try { context.SystemLogs.Any(); }
                 catch { context.Database.ExecuteSqlRaw(@"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SystemLogs' AND xtype='U') CREATE TABLE SystemLogs (LogID INT IDENTITY(1,1) PRIMARY KEY, UserID INT NOT NULL, Module NVARCHAR(100) NOT NULL, Action NVARCHAR(100) NOT NULL, Action_timestamp DATETIME2 NOT NULL DEFAULT GETUTCDATE(), CONSTRAINT FK_SystemLogs_User FOREIGN KEY (UserID) REFERENCES Users(UserID))"); }
 
+                try { context.SecurityLogs.Any(); }
+                catch { context.Database.ExecuteSqlRaw(@"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SecurityLogs' AND xtype='U') CREATE TABLE SecurityLogs (SecurityLogID INT IDENTITY(1,1) PRIMARY KEY, UserID INT NULL, EventType NVARCHAR(100) NOT NULL, Details NVARCHAR(1000) NULL, IpAddress NVARCHAR(100) NULL, Created_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(), CONSTRAINT FK_SecurityLogs_User FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE SET NULL)"); }
+
                 try { context.SystemConfigurations.Any(); }
                 catch { context.Database.ExecuteSqlRaw(@"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SystemConfigurations' AND xtype='U') CREATE TABLE SystemConfigurations (ConfigID INT IDENTITY(1,1) PRIMARY KEY, ConfigKey NVARCHAR(100) NOT NULL, ConfigValue NVARCHAR(500) NOT NULL, Description NVARCHAR(300) NULL, Updated_at DATETIME2 NOT NULL DEFAULT GETUTCDATE())"); }
 
@@ -503,6 +511,7 @@ namespace it15_webproject_mvc.Data
                 context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS DataCleansingLogs (CleansingLogID INTEGER PRIMARY KEY AUTOINCREMENT, SubmissionID INTEGER NOT NULL, RuleID INTEGER NOT NULL, AffectedRecords INTEGER NOT NULL DEFAULT 0, CorrectionType TEXT NOT NULL, Cleansing_date TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (SubmissionID) REFERENCES DataSubmissions(SubmissionID), FOREIGN KEY (RuleID) REFERENCES DataCleansingRules(RuleID))");
                 context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS HistoricalData (HistoricalDataID INTEGER PRIMARY KEY AUTOINCREMENT, WarehouseRecordID INTEGER NOT NULL, VersionNo INTEGER NOT NULL, Snapshot_date TEXT NOT NULL DEFAULT (datetime('now')), DataPayload TEXT NOT NULL, Retention_until TEXT NULL, FOREIGN KEY (WarehouseRecordID) REFERENCES WarehouseRecords(WarehouseRecordID))");
                 context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS SystemLogs (LogID INTEGER PRIMARY KEY AUTOINCREMENT, UserID INTEGER NOT NULL, Module TEXT NOT NULL, Action TEXT NOT NULL, Action_timestamp TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (UserID) REFERENCES Users(UserID))");
+                context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS SecurityLogs (SecurityLogID INTEGER PRIMARY KEY AUTOINCREMENT, UserID INTEGER NULL, EventType TEXT NOT NULL, Details TEXT NULL, IpAddress TEXT NULL, Created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE SET NULL)");
                 context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS SystemConfigurations (ConfigID INTEGER PRIMARY KEY AUTOINCREMENT, ConfigKey TEXT NOT NULL, ConfigValue TEXT NOT NULL, Description TEXT NULL, Updated_at TEXT NOT NULL DEFAULT (datetime('now')))");
                 context.Database.ExecuteSqlRaw("CREATE TABLE IF NOT EXISTS Notifications (NotificationID INTEGER PRIMARY KEY AUTOINCREMENT, UserID INTEGER NOT NULL, OrganizationID INTEGER NOT NULL, Title TEXT NOT NULL, Message TEXT NULL, Type TEXT NOT NULL DEFAULT 'Info', Link TEXT NULL, IsRead INTEGER NOT NULL DEFAULT 0, Created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (UserID) REFERENCES Users(UserID), FOREIGN KEY (OrganizationID) REFERENCES Organizations(OrganizationID))");
             }
@@ -545,6 +554,59 @@ namespace it15_webproject_mvc.Data
             {
                 try { context.Database.ExecuteSqlRaw("ALTER TABLE Organizations ADD COLUMN Created_at TEXT NOT NULL DEFAULT (datetime('now'))"); } catch { }
             }
+        }
+
+        private static void EnsureUserNewColumns(ApplicationDbContext context)
+        {
+            if (IsSqlServer(context))
+            {
+                try
+                {
+                    context.Database.ExecuteSqlRaw(@"
+                        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'Email')
+                        ALTER TABLE Users ALTER COLUMN Email NVARCHAR(100) NOT NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'FailedLoginAttempts')
+                        ALTER TABLE Users ADD FailedLoginAttempts INT NOT NULL DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'LockoutUntil')
+                        ALTER TABLE Users ADD LockoutUntil DATETIME2 NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'TwoFactorCodeHash')
+                        ALTER TABLE Users ADD TwoFactorCodeHash NVARCHAR(200) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'TwoFactorCodeExpiresAt')
+                        ALTER TABLE Users ADD TwoFactorCodeExpiresAt DATETIME2 NULL;");
+                }
+                catch { }
+            }
+            else
+            {
+                try { context.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN FailedLoginAttempts INTEGER NOT NULL DEFAULT 0"); } catch { }
+                try { context.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN LockoutUntil TEXT NULL"); } catch { }
+                try { context.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN TwoFactorCodeHash TEXT NULL"); } catch { }
+                try { context.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN TwoFactorCodeExpiresAt TEXT NULL"); } catch { }
+            }
+        }
+
+        private static void EnsureSecurityConfigurations(ApplicationDbContext context)
+        {
+            EnsureSystemConfig(context, "SuperAdminLockdownEnabled", "false", "Block SuperAdmin access during incident response");
+            EnsureSystemConfig(context, "SuperAdminLockdownReason", "", "Reason for SuperAdmin lockdown");
+        }
+
+        private static void EnsureSystemConfig(ApplicationDbContext context, string key, string value, string description)
+        {
+            var existing = context.SystemConfigurations.FirstOrDefault(c => c.ConfigKey == key);
+            if (existing != null)
+            {
+                return;
+            }
+
+            context.SystemConfigurations.Add(new SystemConfiguration
+            {
+                ConfigKey = key,
+                ConfigValue = value,
+                Description = description,
+                Updated_at = DateTime.UtcNow
+            });
+            context.SaveChanges();
         }
     }
 }

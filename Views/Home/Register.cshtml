@@ -4,6 +4,11 @@
     var s = Context.Request.Query["success"].ToString();
     string? ErrorMessage = null;
     string? SuccessMessage = null;
+    var siteKey = Configuration["ReCaptchaSettings:SiteKey"];
+    var companyNameValue = TempData["Register.CompanyName"]?.ToString() ?? string.Empty;
+    var fullNameValue = TempData["Register.FullName"]?.ToString() ?? string.Empty;
+    var usernameValue = TempData["Register.Username"]?.ToString() ?? string.Empty;
+    var emailValue = TempData["Register.Email"]?.ToString() ?? string.Empty;
 
     if (!string.IsNullOrEmpty(e))
     {
@@ -11,10 +16,24 @@
             ErrorMessage = "All fields are required.";
         else if (string.Equals(e, "password_mismatch", StringComparison.OrdinalIgnoreCase))
             ErrorMessage = "Passwords do not match.";
+        else if (string.Equals(e, "company_name_length", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Company name must be 50 characters or fewer.";
+        else if (string.Equals(e, "full_name_length", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Full name must be 25 characters or fewer.";
+        else if (string.Equals(e, "invalid_username", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Username must be 3-15 characters and only use letters, numbers, underscores, or dots.";
+        else if (string.Equals(e, "invalid_email", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Please enter a valid email address.";
         else if (string.Equals(e, "username_taken", StringComparison.OrdinalIgnoreCase))
             ErrorMessage = "Username is already taken.";
         else if (string.Equals(e, "email_taken", StringComparison.OrdinalIgnoreCase))
             ErrorMessage = "Email is already registered.";
+        else if (string.Equals(e, "recaptcha", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Please complete the reCAPTCHA verification.";
+        else if (string.Equals(e, "password_common", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Password is too common. Please choose a stronger password.";
+        else if (string.Equals(e, "password_username", StringComparison.OrdinalIgnoreCase))
+            ErrorMessage = "Password must not contain parts of your username.";
         else
             ErrorMessage = e;
     }
@@ -24,6 +43,18 @@
         SuccessMessage = "Account created successfully! You can now sign in.";
     }
 }
+
+<script type="text/javascript">
+    var onloadCallback = function() {
+     grecaptcha.render('html_element', {
+          'sitekey' : '@siteKey'
+        });
+    };
+</script>
+
+<script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit"
+        async defer>
+</script>
 
 <div class="min-h-screen flex font-[Inter] bg-white">
 
@@ -105,7 +136,7 @@
                 </div>
             }
 
-            <form method="post" action="/auth/register" class="space-y-5">
+            <form method="post" action="/auth/register" class="space-y-5" onsubmit="return validateRecaptcha()">
                 @Html.AntiForgeryToken()
 
                 <!-- Company Name -->
@@ -116,6 +147,7 @@
                     <input name="companyName"
                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
                            placeholder="Enter your company name"
+                           value="@companyNameValue"
                            required />
                 </div>
 
@@ -128,6 +160,7 @@
                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
                            placeholder="Enter your full name"
                            maxlength="25"
+                           value="@fullNameValue"
                            required />
                 </div>
 
@@ -140,6 +173,7 @@
                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
                            placeholder="Choose a username"
                            maxlength="15"
+                           value="@usernameValue"
                            required />
                 </div>
 
@@ -152,7 +186,8 @@
                            type="email"
                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-[#088395]/20 focus:border-[#088395] transition"
                            placeholder="Enter your email address"
-                           maxlength="30"
+                           maxlength="100"
+                           value="@emailValue"
                            required />
                 </div>
 
@@ -171,7 +206,7 @@
                                pattern="^(?=.*[^a-zA-Z0-9]).{12,}$"
                                title="Password must be at least 12 characters and contain at least one special character."
                                required />
-                        <p class="text-xs text-gray-400 mt-1">Minimum 12 characters with at least one special character (e.g. !&#64;#$%)</p>
+                        <p class="text-xs text-gray-400 mt-1">Minimum 12 characters with at least one special character. Must not contain your username or common passwords.</p>
                         <button type="button"
                                 onclick="togglePassword('passwordInput')"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -219,6 +254,10 @@
                 </div>
 
                 <!-- Register Button -->
+                <div>
+                    <div id="html_element" class="g-recaptcha"></div>
+                </div>
+
                 <button type="submit"
                         class="w-full py-3 rounded-lg bg-gradient-to-r from-[#7AB2B2] to-[#088395] text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition">
                     Create Account &rarr;
@@ -247,5 +286,19 @@
     function togglePassword(inputId) {
         const input = document.getElementById(inputId);
         input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function validateRecaptcha() {
+        if (typeof grecaptcha === "undefined") {
+            return true;
+        }
+
+        const response = grecaptcha.getResponse();
+        if (!response) {
+            alert("Please complete the reCAPTCHA verification.");
+            return false;
+        }
+
+        return true;
     }
 </script>
