@@ -1,6 +1,8 @@
 using it15_webproject_mvc.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Net.Mail;
 
 namespace it15_webproject_mvc.Data
 {
@@ -11,12 +13,14 @@ namespace it15_webproject_mvc.Data
             return context.Database.ProviderName?.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) == true;
         }
 
-        public static void Initialize(ApplicationDbContext context, ILogger? logger = null)
+        public static void Initialize(ApplicationDbContext context, IConfiguration configuration, ILogger? logger = null)
         {
             // Ensure the database and schema exist without deleting existing data
             logger?.LogInformation("DbInitializer: Calling EnsureCreated...");
             var created = context.Database.EnsureCreated();
             logger?.LogInformation("DbInitializer: EnsureCreated returned {Created}", created);
+
+            var superAdminEmail = ResolveSuperAdminEmail(configuration, logger);
 
             // Add new tables/columns that EnsureCreated won't add to an existing database
             EnsureWarehouseTable(context);
@@ -162,7 +166,7 @@ namespace it15_webproject_mvc.Data
                         RoleID = superAdminRole.RoleID,
                         Username = "superadmin",
                         Full_name = "Super Admin",
-                        Email = "superadmin@example.com",
+                        Email = superAdminEmail,
                         Password = BCrypt.Net.BCrypt.HashPassword("SuperPassword123"),
                         Account_status = "Active",
                         Last_login = null,
@@ -225,6 +229,14 @@ namespace it15_webproject_mvc.Data
             else
             {
                 logger?.LogInformation("DbInitializer: Users already exist, ensuring seeded account passwords are correct...");
+
+                var existingSuperAdmin = context.Users.FirstOrDefault(u => u.Username == "superadmin");
+                if (existingSuperAdmin != null && !IsValidEmail(existingSuperAdmin.Email))
+                {
+                    logger?.LogWarning("DbInitializer: SuperAdmin email is invalid. Updating to configured seed email.");
+                    existingSuperAdmin.Email = superAdminEmail;
+                    context.SaveChanges();
+                }
 
                 // Map of seeded usernames to their expected passwords
                 var seededAccounts = new Dictionary<string, string>
@@ -376,6 +388,36 @@ namespace it15_webproject_mvc.Data
             }
 
             EnsureSecurityConfigurations(context);
+        }
+
+        private static string ResolveSuperAdminEmail(IConfiguration configuration, ILogger? logger)
+        {
+            var configuredEmail = configuration["SeedSettings:SuperAdminEmail"]?.Trim();
+            var fallbackEmail = configuration["EmailSettings:FromEmail"]?.Trim();
+            var usernameEmail = configuration["EmailSettings:Username"]?.Trim();
+
+            if (IsValidEmail(configuredEmail))
+            {
+                return configuredEmail!;
+            }
+
+            if (IsValidEmail(fallbackEmail))
+            {
+                return fallbackEmail!;
+            }
+
+            if (IsValidEmail(usernameEmail))
+            {
+                return usernameEmail!;
+            }
+
+            logger?.LogWarning("DbInitializer: No valid SuperAdmin email configured. Falling back to superadmin@example.com.");
+            return "superadmin@example.com";
+        }
+
+        private static bool IsValidEmail(string? email)
+        {
+            return MailAddress.TryCreate(email, out _);
         }
 
         private static void EnsureWarehouseTable(ApplicationDbContext context)

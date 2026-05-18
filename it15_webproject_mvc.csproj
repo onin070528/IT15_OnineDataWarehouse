@@ -26,6 +26,11 @@
 	<ItemGroup>
 	  <Folder Include="SQL\" />
 	</ItemGroup>
+   <ItemGroup>
+	  <Content Update="appsettings.Production.json">
+		<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+	  </Content>
+	</ItemGroup>
     <Target Name="Tailwind" BeforeTargets="Build" Condition="!Exists('wwwroot\cssoutput.css') OR '$(Configuration)' == 'Release'">
 	<Exec Command="npm install" IgnoreExitCode="true" ContinueOnError="true" />
 	<Exec Command="npx @tailwindcss/cli -i ./wwwroot/css/site.css -o ./wwwroot/cssoutput.css --minify" IgnoreExitCode="true" ContinueOnError="true" />

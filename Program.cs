@@ -4,6 +4,8 @@ using it15_webproject_mvc.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,12 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IDataCleansingService, DataCleansingService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IEmailSender, EmailSender>();
+builder.Services.AddHostedService<RetentionPolicyService>();
+builder.Services.AddHostedService<DatabaseBackupService>();
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"D:\Sites\site58485\keys"))
+    .SetApplicationName("it15_webproject_mvc");
 
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -104,7 +112,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<it15_webproject_mvc.Data.ApplicationDbContext>();
-        it15_webproject_mvc.Data.DbInitializer.Initialize(context, logger);
+        it15_webproject_mvc.Data.DbInitializer.Initialize(context, builder.Configuration, logger);
         logger.LogInformation("Database initialized and seeded successfully.");
     }
     catch (Exception ex)

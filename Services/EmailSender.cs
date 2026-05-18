@@ -51,19 +51,31 @@ namespace it15_webproject_mvc.Services
                 client.Credentials = new NetworkCredential(username, password);
             }
 
-            var fromAddress = string.IsNullOrWhiteSpace(fromName)
-                ? new MailAddress(fromEmail)
-                : new MailAddress(fromEmail, fromName);
-
-            using var message = new MailMessage(fromAddress, new MailAddress(toEmail))
-            {
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = false
-            };
-
             try
             {
+                if (!MailAddress.TryCreate(fromEmail, out var fromAddress))
+                {
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(fromName)
+                    && !MailAddress.TryCreate(fromEmail, fromName, out fromAddress))
+                {
+                    return false;
+                }
+
+                if (!MailAddress.TryCreate(toEmail, out var toAddress))
+                {
+                    return false;
+                }
+
+                using var message = new MailMessage(fromAddress, toAddress)
+                {
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = false
+                };
+
                 await client.SendMailAsync(message);
                 return true;
             }
