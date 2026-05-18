@@ -24,7 +24,7 @@ namespace it15_webproject_mvc.Data
 
         // === ETL Pipeline ===
         public DbSet<DataSubmission> DataSubmissions { get; set; }
-        public DbSet<ETLStageLog> ETLStageLogs { get; set; }
+        public DbSet<EtlStageLog> ETLStageLogs { get; set; }
 
         // === Data Quality ===
         public DbSet<DataCleansingRule> DataCleansingRules { get; set; }
@@ -83,7 +83,7 @@ namespace it15_webproject_mvc.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // === ETL STAGE LOG ===
-            modelBuilder.Entity<ETLStageLog>()
+            modelBuilder.Entity<EtlStageLog>()
                 .HasOne(l => l.Submission)
                 .WithMany(s => s.ETLStageLogs)
                 .HasForeignKey(l => l.SubmissionID)
@@ -279,7 +279,7 @@ namespace it15_webproject_mvc.Data
                 .HasDatabaseName("IX_DataSubmissions_OrgId_CreatedAt");
 
             // ETLStageLog: looked up by SubmissionID
-            modelBuilder.Entity<ETLStageLog>()
+            modelBuilder.Entity<EtlStageLog>()
                 .HasIndex(l => l.SubmissionID)
                 .HasDatabaseName("IX_ETLStageLogs_SubmissionId");
 

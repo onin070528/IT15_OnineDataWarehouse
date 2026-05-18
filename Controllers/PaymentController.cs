@@ -11,6 +11,22 @@ namespace it15_webproject_mvc.Controllers
     [Authorize]
     public class PaymentController : BaseController
     {
+        private const string ActionLogin = "Login";
+        private const string ControllerHome = "Home";
+        private const string ActionUserNav = "UserNav";
+        private const string ControllerUserAdmin = "UserAdmin";
+        private const string SectionSubscription = "subscription";
+        private const string TempDataError = "Error";
+        private const string TempDataSuccess = "Success";
+        private const string CurrencyPhp = "PHP";
+        private const string PaymentStatusPending = "Pending";
+        private const string PaymentStatusPaid = "Paid";
+        private const string PaymentStatusUnknown = "Unknown";
+        private const string SubscriptionPremium = "Premium";
+        private const string SubscriptionBasic = "Basic";
+        private const string PayMongoStatusActive = "active";
+        private const string PayMongoStatusPaid = "paid";
+
         private readonly ApplicationDbContext _context;
         private readonly PayMongoService _payMongoService;
         private readonly ILogger<PaymentController> _logger;
@@ -33,11 +49,11 @@ namespace it15_webproject_mvc.Controllers
 
             var userId = GetCurrentUserId();
             if (userId == 0)
-                return RedirectToAction("Login", "Home");
+                return RedirectToAction(ActionLogin, ControllerHome);
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
-                return RedirectToAction("Login", "Home");
+                return RedirectToAction(ActionLogin, ControllerHome);
 
             string planName;
             long amountInCentavos;
@@ -56,8 +72,8 @@ namespace it15_webproject_mvc.Controllers
                     description = "Data Warehouse Premium Plan - Monthly Subscription";
                     break;
                 default:
-                    TempData["Error"] = "Invalid plan selected.";
-                    return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+                    TempData[TempDataError] = "Invalid plan selected.";
+                    return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
             }
 
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -65,13 +81,13 @@ namespace it15_webproject_mvc.Controllers
             var cancelUrl = $"{baseUrl}/Payment/Cancel";
 
             var (checkoutUrl, sessionId, error) = await _payMongoService.CreateCheckoutSession(
-                planName, amountInCentavos, "PHP", description, successUrl, cancelUrl);
+                planName, amountInCentavos, CurrencyPhp, description, successUrl, cancelUrl);
 
             if (error != null || checkoutUrl == null)
             {
                 _logger.LogError("Failed to create checkout: {Error}", error);
-                TempData["Error"] = "Failed to initiate payment. Please try again.";
-                return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+                TempData[TempDataError] = "Failed to initiate payment. Please try again.";
+                return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
             }
 
             var payment = new Payment
@@ -80,8 +96,8 @@ namespace it15_webproject_mvc.Controllers
                 OrganizationID = user.OrganizationID,
                 PlanName = planName,
                 Amount = amountInCentavos / 100m,
-                Currency = "PHP",
-                Status = "Pending",
+                Currency = CurrencyPhp,
+                Status = PaymentStatusPending,
                 CheckoutSessionId = sessionId,
                 CheckoutUrl = checkoutUrl,
                 Created_at = DateTime.UtcNow
@@ -97,7 +113,7 @@ namespace it15_webproject_mvc.Controllers
         {
             var userId = GetCurrentUserId();
             if (userId == 0)
-                return RedirectToAction("Login", "Home");
+                return RedirectToAction(ActionLogin, ControllerHome);
 
             Payment? payment = null;
 
@@ -112,22 +128,22 @@ namespace it15_webproject_mvc.Controllers
             if (payment == null)
             {
                 payment = await _context.Payments
-                    .Where(p => p.UserID == userId && p.Status == "Pending")
+                    .Where(p => p.UserID == userId && p.Status == PaymentStatusPending)
                     .OrderByDescending(p => p.Created_at)
                     .FirstOrDefaultAsync();
             }
 
             if (payment == null)
             {
-                TempData["Error"] = "Payment record not found.";
-                return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+                TempData[TempDataError] = "Payment record not found.";
+                return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
             }
 
             var checkoutSessionId = payment.CheckoutSessionId;
             if (string.IsNullOrEmpty(checkoutSessionId))
             {
-                TempData["Error"] = "Invalid payment session.";
-                return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+                TempData[TempDataError] = "Invalid payment session.";
+                return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
             }
 
             var (status, paymentId, error) = await _payMongoService.GetCheckoutSession(checkoutSessionId);
@@ -135,13 +151,13 @@ namespace it15_webproject_mvc.Controllers
             if (error != null)
             {
                 _logger.LogError("Failed to verify payment: {Error}", error);
-                TempData["Error"] = "Failed to verify payment. Please contact support.";
-                return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+                TempData[TempDataError] = "Failed to verify payment. Please contact support.";
+                return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
             }
 
-            if (status == "active" || status == "paid")
+            if (status == PayMongoStatusActive || status == PayMongoStatusPaid)
             {
-                payment.Status = "Paid";
+                payment.Status = PaymentStatusPaid;
                 payment.PayMongoPaymentId = paymentId;
                 payment.Paid_at = DateTime.UtcNow;
 
@@ -149,28 +165,28 @@ namespace it15_webproject_mvc.Controllers
                 var org = await _context.Organizations.FindAsync(payment.OrganizationID);
                 if (org != null)
                 {
-                    org.SubscriptionPlan = payment.PlanName.Contains("Premium") ? "Premium" : "Basic";
+                    org.SubscriptionPlan = payment.PlanName.Contains(SubscriptionPremium) ? SubscriptionPremium : SubscriptionBasic;
                 }
 
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = $"Payment successful! You are now subscribed to the {payment.PlanName}. Please log out and log back in to activate your new plan.";
+                TempData[TempDataSuccess] = $"Payment successful! You are now subscribed to the {payment.PlanName}. Please log out and log back in to activate your new plan.";
             }
             else
             {
-                payment.Status = status ?? "Unknown";
+                payment.Status = status ?? PaymentStatusUnknown;
                 await _context.SaveChangesAsync();
 
-                TempData["Error"] = $"Payment status: {status}. Please try again or contact support.";
+                TempData[TempDataError] = $"Payment status: {status}. Please try again or contact support.";
             }
 
-            return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+            return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
         }
 
         public IActionResult Cancel()
         {
-            TempData["Error"] = "Payment was cancelled.";
-            return RedirectToAction("UserNav", "UserAdmin", new { section = "subscription" });
+            TempData[TempDataError] = "Payment was cancelled.";
+            return RedirectToAction(ActionUserNav, ControllerUserAdmin, new { section = SectionSubscription });
         }
 
         [HttpGet]
@@ -178,11 +194,11 @@ namespace it15_webproject_mvc.Controllers
         {
             var userId = GetCurrentUserId();
             if (userId == 0)
-                return RedirectToAction("Login", "Home");
+                return RedirectToAction(ActionLogin, ControllerHome);
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
-                return RedirectToAction("Login", "Home");
+                return RedirectToAction(ActionLogin, ControllerHome);
 
             var payments = await _context.Payments
                 .Where(p => p.OrganizationID == user.OrganizationID)

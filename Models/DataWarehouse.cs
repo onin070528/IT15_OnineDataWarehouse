@@ -213,14 +213,15 @@ namespace it15_webproject_mvc.Models
 
         public ICollection<StagingRecord> StagingRecords { get; set; } = [];
 
-        public ICollection<ETLStageLog> ETLStageLogs { get; set; } = [];
+        public ICollection<EtlStageLog> ETLStageLogs { get; set; } = [];
     }
 
     /// <summary>
     /// Tracks each stage of the ETL pipeline for a submission:
     /// Pull ? Validate ? Cleanse ? Submit ? Integrate
     /// </summary>
-    public class ETLStageLog
+    [Table("ETLStageLogs")]
+    public class EtlStageLog
     {
         [Key]
         public int StageLogID { get; set; }

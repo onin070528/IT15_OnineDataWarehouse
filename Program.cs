@@ -43,8 +43,14 @@ builder.Services.AddSingleton<IEmailSender, EmailSender>();
 builder.Services.AddHostedService<RetentionPolicyService>();
 builder.Services.AddHostedService<DatabaseBackupService>();
 
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "keys");
+}
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(@"D:\Sites\site58485\keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
     .SetApplicationName("it15_webproject_mvc");
 
 // Configure cookie authentication
@@ -124,4 +130,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 
-app.Run();
+await app.RunAsync();
