@@ -46,6 +46,11 @@ namespace it15_webproject_mvc.Controllers
         [HttpPost("read/{id}")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             var notif = await _context.Notifications
                 .FirstOrDefaultAsync(n => n.NotificationID == id && n.UserID == userId);
@@ -60,6 +65,11 @@ namespace it15_webproject_mvc.Controllers
         [HttpPost("read-all")]
         public async Task<IActionResult> MarkAllAsRead()
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             await _context.Notifications
                 .Where(n => n.UserID == userId && !n.IsRead)

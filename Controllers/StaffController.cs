@@ -69,6 +69,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSource(string sourceName, string apiBaseUrl, string apiEndpoint, string apiKey, string authMethod, string targetTable)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             var orgId = GetCurrentOrgId();
             var org = await _context.Organizations.FindAsync(orgId);
@@ -110,6 +115,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TestConnection(int dataSourceId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var orgId = GetCurrentOrgId();
             var source = await _context.DataSources.FirstOrDefaultAsync(s => s.DataSourceID == dataSourceId && s.OrganizationID == orgId);
             if (source == null) return NotFound();
@@ -132,6 +142,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteSource(int dataSourceId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var orgId = GetCurrentOrgId();
             var source = await _context.DataSources.FirstOrDefaultAsync(s => s.DataSourceID == dataSourceId && s.OrganizationID == orgId);
             if (source == null) return NotFound();
@@ -153,6 +168,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PullFromApi(int dataSourceId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             var orgId = GetCurrentOrgId();
             var source = await _context.DataSources.FirstOrDefaultAsync(s => s.DataSourceID == dataSourceId && s.OrganizationID == orgId);
@@ -220,6 +240,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ValidateBatch(string batchId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var orgId = GetCurrentOrgId();
             var records = await _context.StagingRecords
                 .Where(r => r.BatchId == batchId && r.DataSource!.OrganizationID == orgId)
@@ -276,6 +301,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CorrectRecord(int recordId, string correctedJson)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var orgId = GetCurrentOrgId();
             var userId = GetCurrentUserId();
 
@@ -324,6 +354,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SubmitBatch(string batchId, string loadMode, string? notes)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             var orgId = GetCurrentOrgId();
 
@@ -388,6 +423,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DiscardBatch(int dataSourceId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             var orgId = GetCurrentOrgId();
             var source = await _context.DataSources.FirstOrDefaultAsync(s => s.DataSourceID == dataSourceId && s.OrganizationID == orgId);

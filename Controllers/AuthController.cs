@@ -74,6 +74,11 @@ namespace it15_webproject_mvc.Controllers
             [FromForm(Name = "g-recaptcha-response")] string recaptchaToken,
             bool rememberMe = false)
         {
+            if (!ModelState.IsValid)
+            {
+                return RedirectWithLoginError("invalid", username);
+            }
+
             username = username?.Trim() ?? string.Empty;
             password = password?.Trim() ?? string.Empty;
 

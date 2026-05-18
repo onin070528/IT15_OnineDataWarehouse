@@ -95,6 +95,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleSourceStatus(int dataSourceId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var adminUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (adminUserIdClaim == null) return RedirectToAction("Login", "Home");
 
@@ -132,6 +137,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ArchiveTable(string targetTable)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var adminUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (adminUserIdClaim == null) return RedirectToAction("Login", "Home");
 
@@ -178,6 +188,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RestoreTable(string targetTable)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var adminUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (adminUserIdClaim == null) return RedirectToAction("Login", "Home");
 

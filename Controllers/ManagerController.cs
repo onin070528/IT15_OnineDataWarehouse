@@ -78,6 +78,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveSubmission(int submissionId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var orgId = GetCurrentOrgId();
             var userId = GetCurrentUserId();
             var submission = await _context.DataSubmissions
@@ -237,6 +242,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectSubmission(int submissionId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var orgId = GetCurrentOrgId();
             var submission = await _context.DataSubmissions.FirstOrDefaultAsync(s => s.SubmissionID == submissionId && s.OrganizationID == orgId);
             if (submission == null) return NotFound();

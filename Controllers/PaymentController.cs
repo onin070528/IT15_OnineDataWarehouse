@@ -26,6 +26,11 @@ namespace it15_webproject_mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Checkout(string plan)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             var userId = GetCurrentUserId();
             if (userId == 0)
                 return RedirectToAction("Login", "Home");
