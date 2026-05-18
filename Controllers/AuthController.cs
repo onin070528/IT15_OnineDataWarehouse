@@ -18,6 +18,17 @@ namespace it15_webproject_mvc.Controllers
     [Route("auth")]
     public class AuthController : Controller
     {
+        private const string RoleSuperAdmin = "SuperAdmin";
+        private const string RoleUserAdmin = "UserAdmin";
+        private const string RoleStaff = "Staff";
+        private const string RoleDataAnalyst = "DataAnalyst";
+        private const string RoleManager = "Manager";
+        private const string AccountStatusActive = "Active";
+        private const string SubscriptionFree = "Free";
+        private const string SubscriptionPremium = "Premium";
+        private const string SystemConfigSuperAdminLockdownEnabled = "SuperAdminLockdownEnabled";
+        private const string SystemConfigSuperAdminLockdownReason = "SuperAdminLockdownReason";
+
         private static readonly HashSet<string> BlockedPasswords = new(StringComparer.OrdinalIgnoreCase)
         {
             "password",
@@ -82,19 +93,10 @@ namespace it15_webproject_mvc.Controllers
             username = username?.Trim() ?? string.Empty;
             password = password?.Trim() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            var inputError = await ValidateLoginInputAsync(username, password, recaptchaToken);
+            if (inputError != null)
             {
-                return RedirectWithLoginError("missing", username);
-            }
-
-            if (!IsValidLoginIdentifier(username))
-            {
-                return RedirectWithLoginError("invalid_username", username);
-            }
-
-            if (!await IsRecaptchaValid(recaptchaToken))
-            {
-                return RedirectWithLoginError("recaptcha", username);
+                return inputError;
             }
 
             var user = await _context.Users
@@ -104,62 +106,29 @@ namespace it15_webproject_mvc.Controllers
 
             var now = DateTime.UtcNow;
 
-            if (user != null && user.LockoutUntil.HasValue)
+            var lockoutResult = HandleLockout(user, now);
+            if (lockoutResult != null)
             {
-                if (user.LockoutUntil.Value > now)
-                {
-                    var lockoutUntil = Uri.EscapeDataString(user.LockoutUntil.Value.ToString("O"));
-                    return Redirect($"/Home/Login?error=lockout&lockoutUntil={lockoutUntil}");
-                }
-
-                user.LockoutUntil = null;
-                user.FailedLoginAttempts = 0;
+                return lockoutResult;
             }
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
             {
-                if (user != null)
-                {
-                    user.FailedLoginAttempts++;
-                    if (user.FailedLoginAttempts >= 5)
-                    {
-                        user.LockoutUntil = now.AddMinutes(15);
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > now)
-                    {
-                        var lockoutUntil = Uri.EscapeDataString(user.LockoutUntil.Value.ToString("O"));
-                        return Redirect($"/Home/Login?error=lockout&lockoutUntil={lockoutUntil}");
-                    }
-                }
-
-                return RedirectWithLoginError("invalid", username);
+                return await HandleInvalidLoginAsync(user, now, username);
             }
 
-            if (user.Account_status != "Active")
+            if (user.Account_status != AccountStatusActive)
             {
                 return RedirectWithLoginError("Account is disabled.", username);
             }
 
-            var roleName = user.Role?.RoleName ?? "Staff";
-            var subPlan = user.Organization?.SubscriptionPlan ?? "Free";
+            var roleName = user.Role?.RoleName ?? RoleStaff;
+            var subPlan = user.Organization?.SubscriptionPlan ?? SubscriptionFree;
 
-            if (roleName == "SuperAdmin" && await IsSuperAdminLockdownEnabledAsync())
+            var roleAccessError = await ValidateRoleAccessAsync(user, roleName, subPlan, username);
+            if (roleAccessError != null)
             {
-                await LogSecurityEventAsync(user.UserID, "SuperAdminLoginBlocked", "SuperAdmin login blocked due to lockdown.");
-                return RedirectWithLoginError("superadmin_lockdown", username);
-            }
-
-            // Enforce subscription-based role access on login
-            if (roleName == "Manager" && subPlan == "Free")
-            {
-                return RedirectWithLoginError("Your organization is on the Free plan. The Manager role requires a Basic or Premium subscription.", username);
-            }
-            if (roleName == "DataAnalyst" && subPlan != "Premium")
-            {
-                return RedirectWithLoginError("Your organization requires a Premium subscription for the Data Analyst role.", username);
+                return roleAccessError;
             }
 
             var twoFactorCode = GenerateTwoFactorCode();
@@ -557,9 +526,9 @@ namespace it15_webproject_mvc.Controllers
 
             await _context.SaveChangesAsync();
 
-            var roleName = user.Role?.RoleName ?? "Staff";
+            var roleName = user.Role?.RoleName ?? RoleStaff;
             var orgName = user.Organization?.OrganizationName ?? "My Company";
-            var subPlan = user.Organization?.SubscriptionPlan ?? "Free";
+            var subPlan = user.Organization?.SubscriptionPlan ?? SubscriptionFree;
 
             var claims = new List<Claim>
             {
@@ -594,11 +563,11 @@ namespace it15_webproject_mvc.Controllers
             // Redirect based on role
             return roleName switch
             {
-                "SuperAdmin" => RedirectToAction("Supernav", "SuperAdmin"),
-                "UserAdmin" => RedirectToAction("UserNav", "UserAdmin"),
-                "Staff" => RedirectToAction("StaffNav", "Staff"),
-                "DataAnalyst" => RedirectToAction("AnalystNav", "DataAnalyst"),
-                "Manager" => RedirectToAction("ManagerNav", "Manager"),
+                RoleSuperAdmin => RedirectToAction("Supernav", "SuperAdmin"),
+                RoleUserAdmin => RedirectToAction("UserNav", "UserAdmin"),
+                RoleStaff => RedirectToAction("StaffNav", "Staff"),
+                RoleDataAnalyst => RedirectToAction("AnalystNav", "DataAnalyst"),
+                RoleManager => RedirectToAction("ManagerNav", "Manager"),
                 _ => RedirectToAction("Index", "Home")
             };
         }
@@ -632,8 +601,8 @@ namespace it15_webproject_mvc.Controllers
                 return Unauthorized();
             }
 
-            await SetSystemConfigurationAsync("SuperAdminLockdownEnabled", "true", "Block SuperAdmin access during incident response");
-            await SetSystemConfigurationAsync("SuperAdminLockdownReason", reason ?? "Emergency lockdown requested.", "Reason for SuperAdmin lockdown");
+            await SetSystemConfigurationAsync(SystemConfigSuperAdminLockdownEnabled, "true", "Block SuperAdmin access during incident response");
+            await SetSystemConfigurationAsync(SystemConfigSuperAdminLockdownReason, reason ?? "Emergency lockdown requested.", "Reason for SuperAdmin lockdown");
             await LogSecurityEventAsync(null, "SuperAdminLockdownEnabled", reason ?? "Emergency lockdown requested.");
             return Ok(new { status = "enabled" });
         }
@@ -647,8 +616,8 @@ namespace it15_webproject_mvc.Controllers
                 return Unauthorized();
             }
 
-            await SetSystemConfigurationAsync("SuperAdminLockdownEnabled", "false", "Block SuperAdmin access during incident response");
-            await SetSystemConfigurationAsync("SuperAdminLockdownReason", string.Empty, "Reason for SuperAdmin lockdown");
+            await SetSystemConfigurationAsync(SystemConfigSuperAdminLockdownEnabled, "false", "Block SuperAdmin access during incident response");
+            await SetSystemConfigurationAsync(SystemConfigSuperAdminLockdownReason, string.Empty, "Reason for SuperAdmin lockdown");
             await LogSecurityEventAsync(null, "SuperAdminLockdownDisabled", "Emergency lockdown cleared.");
             return Ok(new { status = "disabled" });
         }
@@ -673,7 +642,7 @@ namespace it15_webproject_mvc.Controllers
         {
             var config = await _context.SystemConfigurations
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.ConfigKey == "SuperAdminLockdownEnabled");
+                .FirstOrDefaultAsync(c => c.ConfigKey == SystemConfigSuperAdminLockdownEnabled);
 
             return config != null && bool.TryParse(config.ConfigValue, out var enabled) && enabled;
         }
@@ -794,8 +763,13 @@ namespace it15_webproject_mvc.Controllers
             }
 
             var client = _httpClientFactory.CreateClient();
+            var verifyUrl = _configuration["ReCaptchaSettings:VerifyUrl"];
+            if (string.IsNullOrWhiteSpace(verifyUrl))
+            {
+                return false;
+            }
             using var response = await client.PostAsync(
-                "https://www.google.com/recaptcha/api/siteverify",
+                verifyUrl,
                 new FormUrlEncodedContent(new Dictionary<string, string>
                 {
                     ["secret"] = secretKey,
@@ -813,7 +787,88 @@ namespace it15_webproject_mvc.Controllers
 
         private sealed class RecaptchaVerificationResponse
         {
-            public bool Success { get; set; }
+            public bool Success { get; set; } = false;
+        }
+
+        private async Task<IActionResult?> ValidateLoginInputAsync(string username, string password, string recaptchaToken)
+        {
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                return RedirectWithLoginError("missing", username);
+            }
+
+            if (!IsValidLoginIdentifier(username))
+            {
+                return RedirectWithLoginError("invalid_username", username);
+            }
+
+            if (!await IsRecaptchaValid(recaptchaToken))
+            {
+                return RedirectWithLoginError("recaptcha", username);
+            }
+
+            return null;
+        }
+
+        private IActionResult? HandleLockout(User? user, DateTime now)
+        {
+            if (user == null || !user.LockoutUntil.HasValue)
+            {
+                return null;
+            }
+
+            if (user.LockoutUntil.Value > now)
+            {
+                var lockoutUntil = Uri.EscapeDataString(user.LockoutUntil.Value.ToString("O"));
+                return Redirect($"/Home/Login?error=lockout&lockoutUntil={lockoutUntil}");
+            }
+
+            user.LockoutUntil = null;
+            user.FailedLoginAttempts = 0;
+            return null;
+        }
+
+        private async Task<IActionResult> HandleInvalidLoginAsync(User? user, DateTime now, string username)
+        {
+            if (user != null)
+            {
+                user.FailedLoginAttempts++;
+                if (user.FailedLoginAttempts >= 5)
+                {
+                    user.LockoutUntil = now.AddMinutes(15);
+                }
+
+                await _context.SaveChangesAsync();
+
+                if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > now)
+                {
+                    var lockoutUntil = Uri.EscapeDataString(user.LockoutUntil.Value.ToString("O"));
+                    return Redirect($"/Home/Login?error=lockout&lockoutUntil={lockoutUntil}");
+                }
+            }
+
+            return RedirectWithLoginError("invalid", username);
+        }
+
+        private async Task<IActionResult?> ValidateRoleAccessAsync(User user, string roleName, string subPlan, string username)
+        {
+            if (roleName == RoleSuperAdmin && await IsSuperAdminLockdownEnabledAsync())
+            {
+                await LogSecurityEventAsync(user.UserID, "SuperAdminLoginBlocked", "SuperAdmin login blocked due to lockdown.");
+                return RedirectWithLoginError("superadmin_lockdown", username);
+            }
+
+            if (roleName == RoleManager && subPlan == SubscriptionFree)
+            {
+                return RedirectWithLoginError("Your organization is on the Free plan. The Manager role requires a Basic or Premium subscription.", username);
+            }
+
+            if (roleName == RoleDataAnalyst && subPlan != SubscriptionPremium)
+            {
+                return RedirectWithLoginError("Your organization requires a Premium subscription for the Data Analyst role.", username);
+            }
+
+            return null;
         }
     }
 }

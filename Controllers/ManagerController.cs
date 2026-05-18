@@ -12,17 +12,31 @@ namespace it15_webproject_mvc.Controllers
     [Authorize(Roles = "Manager")]
     public class ManagerController : BaseController
     {
+        private const string StatusActive = "Active";
+        private const string StatusArchived = "Archived";
+        private const string StatusIntegrated = "Integrated";
+        private const string StatusSubmitted = "Submitted";
+        private const string StatusFailed = "Failed";
+        private const string StatusValid = "Valid";
+        private const string StatusError = "Error";
+        private const string LoadModeOverwrite = "Overwrite";
+        private const string LoadModeUpsert = "Upsert";
+        private const string NotificationTypeSuccess = "Success";
+        private const string NotificationTypeError = "Error";
+
         private readonly ApplicationDbContext _context;
         private readonly IAuditService _audit;
         private readonly IDataCleansingService _cleanser;
         private readonly INotificationService _notif;
+        private readonly ILogger<ManagerController> _logger;
 
-        public ManagerController(ApplicationDbContext context, IAuditService audit, IDataCleansingService cleanser, INotificationService notif)
+        public ManagerController(ApplicationDbContext context, IAuditService audit, IDataCleansingService cleanser, INotificationService notif, ILogger<ManagerController> logger)
         {
             _context = context;
             _audit = audit;
             _cleanser = cleanser;
             _notif = notif;
+            _logger = logger;
         }
 
         public async Task<IActionResult> ManagerNav(string section = "dashboard")
@@ -34,30 +48,28 @@ namespace it15_webproject_mvc.Controllers
             var org = await _context.Organizations.FindAsync(orgId);
             ViewData["SubscriptionPlan"] = org?.SubscriptionPlan ?? "Free";
 
-            var userId = GetCurrentUserId();
-
             switch (section.ToLower())
             {
                 case "dashboard":
-                    await LoadDashboardData(userId);
+                    await LoadDashboardData();
                     break;
                 case "viewdata":
-                    await LoadViewDataSection(userId);
+                    await LoadViewDataSection();
                     break;
                 case "reports":
-                    await LoadReportsData(userId);
+                    await LoadReportsData();
                     break;
                 case "history":
-                    await LoadHistoryData(userId);
+                    await LoadHistoryData();
                     break;
                 case "export":
-                    await LoadExportData(userId);
+                    await LoadExportData();
                     break;
                 case "performance":
-                    await LoadPerformanceData(userId);
+                    await LoadPerformanceData();
                     break;
                 case "approvals":
-                    await LoadApprovalsData(userId);
+                    await LoadApprovalsData();
                     break;
             }
 
@@ -90,150 +102,15 @@ namespace it15_webproject_mvc.Controllers
                 .FirstOrDefaultAsync(s => s.SubmissionID == submissionId && s.OrganizationID == orgId);
             if (submission == null) return NotFound();
 
-            // Use execution strategy to support SqlServerRetryingExecutionStrategy with transactions
-            var strategy = _context.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            var approvalResult = await ProcessApprovalAsync(submission, orgId, userId);
+            if (!approvalResult.Success)
             {
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
-                {
-                    var stagingRecords = await _context.StagingRecords
-                        .Where(r => r.SubmissionID == submissionId && r.ValidationStatus == "Valid")
-                        .OrderBy(r => r.RowNumber)
-                        .ToListAsync();
-
-                    var loadedCount = 0;
-                    var skippedCount = 0;
-
-                    // Handle Overwrite: archive existing active records for this target table
-                    if (submission.LoadMode == "Overwrite")
-                    {
-                        var existingRecords = await _context.WarehouseRecords
-                            .Where(w => w.TargetTable == submission.TargetTable && w.OrganizationID == orgId && w.RecordStatus == "Active")
-                            .ToListAsync();
-                        foreach (var existing in existingRecords)
-                        {
-                            existing.RecordStatus = "Archived";
-                        }
-                    }
-
-                    // Pre-load upsert candidates once (instead of per-row) to avoid N+1
-                    Dictionary<string, WarehouseRecord>? upsertCandidates = null;
-                    if (submission.LoadMode == "Upsert")
-                    {
-                        var allCandidates = await _context.WarehouseRecords
-                            .Where(w => w.TargetTable == submission.TargetTable
-                                && w.OrganizationID == orgId
-                                && w.RecordStatus == "Active")
-                            .ToListAsync();
-
-                        upsertCandidates = new Dictionary<string, WarehouseRecord>();
-                        foreach (var candidate in allCandidates)
-                        {
-                            try
-                            {
-                                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(candidate.CleanData);
-                                if (dict != null && dict.TryGetValue("id", out var existingId))
-                                {
-                                    var key = existingId.ToString();
-                                    if (!string.IsNullOrEmpty(key))
-                                        upsertCandidates[key] = candidate;
-                                }
-                            }
-                            catch { }
-                        }
-                    }
-
-                    foreach (var staging in stagingRecords)
-                    {
-                        // Use DataCleansingService instead of inline logic
-                        var cleanDict = _cleanser.CleanseRow(staging.RawData);
-                        if (cleanDict == null)
-                        {
-                            skippedCount++;
-                            continue;
-                        }
-
-                        // Handle Upsert: use pre-loaded candidates dictionary
-                        if (submission.LoadMode == "Upsert" && upsertCandidates != null && cleanDict.ContainsKey("id"))
-                        {
-                            var idValue = cleanDict["id"]?.ToString();
-                            if (!string.IsNullOrEmpty(idValue) && upsertCandidates.TryGetValue(idValue, out var existingRecord))
-                            {
-                                existingRecord.RecordStatus = "Archived";
-                                var newVersion = existingRecord.Version + 1;
-
-                                _context.WarehouseRecords.Add(new WarehouseRecord
-                                {
-                                    DataSourceID = staging.DataSourceID,
-                                    SubmissionID = submissionId,
-                                    BatchId = submission.BatchId,
-                                    TargetTable = submission.TargetTable,
-                                    RowNumber = staging.RowNumber,
-                                    CleanData = JsonSerializer.Serialize(cleanDict),
-                                    RawDataSnapshot = staging.RawData,
-                                    RecordStatus = "Active",
-                                    LoadMode = submission.LoadMode,
-                                    Version = newVersion,
-                                    Loaded_at = DateTime.UtcNow,
-                                    LoadedByUserID = userId,
-                                    OrganizationID = orgId
-                                });
-                                loadedCount++;
-                                continue;
-                            }
-                        }
-
-                        // Append or new insert
-                        _context.WarehouseRecords.Add(new WarehouseRecord
-                        {
-                            DataSourceID = staging.DataSourceID,
-                            SubmissionID = submissionId,
-                            BatchId = submission.BatchId,
-                            TargetTable = submission.TargetTable,
-                            RowNumber = staging.RowNumber,
-                            CleanData = JsonSerializer.Serialize(cleanDict),
-                            RawDataSnapshot = staging.RawData,
-                            RecordStatus = "Active",
-                            LoadMode = submission.LoadMode,
-                            Version = 1,
-                            Loaded_at = DateTime.UtcNow,
-                            LoadedByUserID = userId,
-                            OrganizationID = orgId
-                        });
-                        loadedCount++;
-                    }
-
-                    // Update submission status
-                    submission.Status = "Integrated";
-                    submission.Integrated_at = DateTime.UtcNow;
-                    submission.LoadedRows = loadedCount;
-                    submission.SkippedRows = skippedCount;
-
-                    // Include notification inside the transaction so everything saves together
-                    _notif.Notify(submission.SubmittedByUserID, orgId,
-                        "Submission Approved",
-                        $"Your batch {submission.BatchId} has been approved. {loadedCount} rows loaded into '{submission.TargetTable}'.",
-                        "Success",
-                        "/Staff/StaffNav?section=submit");
-
-                    _audit.Log("Submission Approved & Loaded", "DataSubmission", submission.SubmissionID, submission.BatchId,
-                        $"Approved by Manager | Target: {submission.TargetTable} | Loaded: {loadedCount} rows | Skipped: {skippedCount} | Mode: {submission.LoadMode}",
-                        userId, orgId);
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    TempData["Success"] = $"Submission {submission.BatchId} approved — {loadedCount} rows loaded into warehouse table '{submission.TargetTable}'.";
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    var logger = HttpContext.RequestServices.GetService<ILogger<ManagerController>>();
-                    logger?.LogError(ex, "Failed to approve submission {BatchId} (ID: {SubmissionId})", submission.BatchId, submission.SubmissionID);
-                    TempData["Error"] = $"Failed to load submission {submission.BatchId}. All changes have been rolled back. Reason: {ex.InnerException?.Message ?? ex.Message}";
-                }
-            });
+                TempData["Error"] = approvalResult.ErrorMessage;
+            }
+            else
+            {
+                TempData["Success"] = $"Submission {submission.BatchId} approved - {approvalResult.LoadedCount} rows loaded into warehouse table '{submission.TargetTable}'.";
+            }
 
             return RedirectToAction("ManagerNav", new { section = "approvals" });
         }
@@ -251,7 +128,7 @@ namespace it15_webproject_mvc.Controllers
             var submission = await _context.DataSubmissions.FirstOrDefaultAsync(s => s.SubmissionID == submissionId && s.OrganizationID == orgId);
             if (submission == null) return NotFound();
 
-            submission.Status = "Failed";
+            submission.Status = StatusFailed;
 
             _audit.Log("Submission Rejected", "DataSubmission", submission.SubmissionID, submission.BatchId,
                 $"Rejected by Manager | Target: {submission.TargetTable} | Rows: {submission.ValidRows}/{submission.TotalRows}",
@@ -264,7 +141,7 @@ namespace it15_webproject_mvc.Controllers
             _notif.Notify(submission.SubmittedByUserID, orgId,
                 "Submission Rejected",
                 $"Your batch {submission.BatchId} targeting '{submission.TargetTable}' was rejected by a Manager.",
-                "Error",
+                NotificationTypeError,
                 "/Staff/StaffNav?section=submit");
             await _context.SaveChangesAsync();
 
@@ -273,11 +150,11 @@ namespace it15_webproject_mvc.Controllers
 
         // === DATA LOADERS ===
 
-        private async Task LoadDashboardData(int userId)
+        private async Task LoadDashboardData()
         {
             var orgId = GetCurrentOrgId();
             ViewData["TotalSources"] = await _context.DataSources.AsNoTracking().CountAsync(s => s.OrganizationID == orgId);
-            ViewData["ActiveSources"] = await _context.DataSources.AsNoTracking().CountAsync(s => s.Status == "Active" && s.OrganizationID == orgId);
+            ViewData["ActiveSources"] = await _context.DataSources.AsNoTracking().CountAsync(s => s.Status == StatusActive && s.OrganizationID == orgId);
 
             // Consolidate submission counts into a single round-trip
             var submissionCounts = await _context.DataSubmissions
@@ -287,9 +164,9 @@ namespace it15_webproject_mvc.Controllers
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
             ViewData["TotalSubmissions"] = submissionCounts.Sum(s => s.Count);
-            ViewData["PendingApprovals"] = submissionCounts.Where(s => s.Status == "Submitted").Sum(s => s.Count);
-            ViewData["IntegratedCount"] = submissionCounts.Where(s => s.Status == "Integrated").Sum(s => s.Count);
-            ViewData["FailedCount"] = submissionCounts.Where(s => s.Status == "Failed").Sum(s => s.Count);
+            ViewData["PendingApprovals"] = submissionCounts.Where(s => s.Status == StatusSubmitted).Sum(s => s.Count);
+            ViewData["IntegratedCount"] = submissionCounts.Where(s => s.Status == StatusIntegrated).Sum(s => s.Count);
+            ViewData["FailedCount"] = submissionCounts.Where(s => s.Status == StatusFailed).Sum(s => s.Count);
 
             ViewData["TotalAuditLogs"] = await _context.AuditLogs.AsNoTracking().CountAsync(a => a.OrganizationID == orgId);
             ViewData["TodayAuditLogs"] = await _context.AuditLogs.AsNoTracking().CountAsync(a => a.OrganizationID == orgId && a.Performed_at.Date == DateTime.UtcNow.Date);
@@ -307,14 +184,14 @@ namespace it15_webproject_mvc.Controllers
                 .AsNoTracking()
                 .Include(s => s.DataSource)
                 .Include(s => s.SubmittedByUser)
-                .Where(s => s.Status == "Submitted" && s.OrganizationID == orgId)
+                .Where(s => s.Status == StatusSubmitted && s.OrganizationID == orgId)
                 .OrderByDescending(s => s.Created_at)
                 .Take(5)
                 .ToListAsync();
             ViewData["PendingList"] = pendingList;
         }
 
-        private async Task LoadViewDataSection(int userId)
+        private async Task LoadViewDataSection()
         {
             var orgId = GetCurrentOrgId();
             var sources = await _context.DataSources
@@ -340,7 +217,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["TotalRowsLoaded"] = submissions.Sum(s => s.ValidRows);
         }
 
-        private async Task LoadReportsData(int userId)
+        private async Task LoadReportsData()
         {
             var orgId = GetCurrentOrgId();
             // Source summary for reports
@@ -387,7 +264,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["MonthlySubmissions"] = monthlySubmissions;
         }
 
-        private async Task LoadHistoryData(int userId)
+        private async Task LoadHistoryData()
         {
             var orgId = GetCurrentOrgId();
 
@@ -405,7 +282,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["TotalActions"] = await _context.AuditLogs.AsNoTracking().CountAsync(a => a.OrganizationID == orgId);
             ViewData["TodayActions"] = await _context.AuditLogs.AsNoTracking().CountAsync(a => a.OrganizationID == orgId && a.Performed_at.Date == DateTime.UtcNow.Date);
             ViewData["TotalDatasets"] = await _context.DataSources.AsNoTracking().CountAsync(s => s.OrganizationID == orgId);
-            ViewData["TotalRecordsStored"] = await _context.WarehouseRecords.AsNoTracking().CountAsync(w => w.OrganizationID == orgId && w.RecordStatus == "Active");
+            ViewData["TotalRecordsStored"] = await _context.WarehouseRecords.AsNoTracking().CountAsync(w => w.OrganizationID == orgId && w.RecordStatus == StatusActive);
             ViewData["UniqueEntities"] = await _context.AuditLogs.AsNoTracking().Where(a => a.OrganizationID == orgId).Select(a => a.EntityName).Distinct().CountAsync();
             ViewData["UniqueUsers"] = await _context.AuditLogs.AsNoTracking().Where(a => a.OrganizationID == orgId).Select(a => a.PerformedByUserID).Distinct().CountAsync();
 
@@ -424,8 +301,8 @@ namespace it15_webproject_mvc.Controllers
                     TotalVersions = g.Select(w => w.Version).Distinct().Count(),
                     LastUpdated = g.Max(w => w.Loaded_at),
                     LastUpdatedBy = g.OrderByDescending(w => w.Loaded_at).First().LoadedByUser!.Full_name,
-                    ActiveRecords = g.Count(w => w.RecordStatus == "Active"),
-                    ArchivedRecords = g.Count(w => w.RecordStatus == "Archived")
+                    ActiveRecords = g.Count(w => w.RecordStatus == StatusActive),
+                    ArchivedRecords = g.Count(w => w.RecordStatus == StatusArchived)
                 })
                 .OrderByDescending(g => g.LastUpdated)
                 .ToListAsync();
@@ -436,7 +313,7 @@ namespace it15_webproject_mvc.Controllers
                 .AsNoTracking()
                 .Include(s => s.DataSource)
                 .Include(s => s.SubmittedByUser)
-                .Where(s => s.OrganizationID == orgId && s.Status == "Integrated")
+                .Where(s => s.OrganizationID == orgId && s.Status == StatusIntegrated)
                 .OrderByDescending(s => s.Integrated_at)
                 .Take(20)
                 .Select(s => new
@@ -523,14 +400,14 @@ namespace it15_webproject_mvc.Controllers
             ViewData["EntityTypes"] = entityTypes;
         }
 
-        private async Task LoadExportData(int userId)
+        private async Task LoadExportData()
         {
             var orgId = GetCurrentOrgId();
             var submissions = await _context.DataSubmissions
                 .AsNoTracking()
                 .Include(s => s.DataSource)
                 .Include(s => s.SubmittedByUser)
-                .Where(s => (s.Status == "Integrated" || s.Status == "Submitted") && s.OrganizationID == orgId)
+                .Where(s => (s.Status == StatusIntegrated || s.Status == StatusSubmitted) && s.OrganizationID == orgId)
                 .OrderByDescending(s => s.Created_at)
                 .ToListAsync();
             ViewData["ExportableSubmissions"] = submissions;
@@ -539,7 +416,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["TotalExportableRows"] = submissions.Sum(s => s.ValidRows);
         }
 
-        private async Task LoadPerformanceData(int userId)
+        private async Task LoadPerformanceData()
         {
             var orgId = GetCurrentOrgId();
             // Source performance
@@ -555,8 +432,8 @@ namespace it15_webproject_mvc.Controllers
                     s.Last_sync,
                     TotalBatches = s.StagingRecords.Select(r => r.BatchId).Distinct().Count(),
                     TotalRows = s.StagingRecords.Count(),
-                    ValidRows = s.StagingRecords.Count(r => r.ValidationStatus == "Valid"),
-                    ErrorRows = s.StagingRecords.Count(r => r.ValidationStatus == "Error")
+                    ValidRows = s.StagingRecords.Count(r => r.ValidationStatus == StatusValid),
+                    ErrorRows = s.StagingRecords.Count(r => r.ValidationStatus == StatusError)
                 })
                 .OrderByDescending(s => s.TotalRows)
                 .ToListAsync();
@@ -589,8 +466,8 @@ namespace it15_webproject_mvc.Controllers
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
             var totalRows = stagingStats.Sum(s => s.Count);
-            var validRows = stagingStats.Where(s => s.Status == "Valid").Sum(s => s.Count);
-            var errorRows = stagingStats.Where(s => s.Status == "Error").Sum(s => s.Count);
+            var validRows = stagingStats.Where(s => s.Status == StatusValid).Sum(s => s.Count);
+            var errorRows = stagingStats.Where(s => s.Status == StatusError).Sum(s => s.Count);
             ViewData["TotalRows"] = totalRows;
             ViewData["ValidRows"] = validRows;
             ViewData["ErrorRows"] = errorRows;
@@ -599,13 +476,13 @@ namespace it15_webproject_mvc.Controllers
                 : 0.0;
         }
 
-        private async Task LoadApprovalsData(int userId)
+        private async Task LoadApprovalsData()
         {
             var orgId = GetCurrentOrgId();
             var pending = await _context.DataSubmissions
                 .Include(s => s.DataSource)
                 .Include(s => s.SubmittedByUser)
-                .Where(s => s.Status == "Submitted" && s.OrganizationID == orgId)
+                .Where(s => s.Status == StatusSubmitted && s.OrganizationID == orgId)
                 .OrderByDescending(s => s.Created_at)
                 .ToListAsync();
             ViewData["PendingSubmissions"] = pending;
@@ -655,7 +532,10 @@ namespace it15_webproject_mvc.Controllers
                         }
                         rows.Add(rowData);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse preview record {RecordId}", record.StagingRecordID);
+                    }
                 }
 
                 previewData[group.Key] = (columns, rows);
@@ -665,7 +545,7 @@ namespace it15_webproject_mvc.Controllers
             var recent = await _context.DataSubmissions
                 .Include(s => s.DataSource)
                 .Include(s => s.SubmittedByUser)
-                .Where(s => (s.Status == "Integrated" || s.Status == "Failed") && s.OrganizationID == orgId)
+                .Where(s => (s.Status == StatusIntegrated || s.Status == StatusFailed) && s.OrganizationID == orgId)
                 .OrderByDescending(s => s.Submitted_at)
                 .Take(20)
                 .ToListAsync();
@@ -676,12 +556,217 @@ namespace it15_webproject_mvc.Controllers
             // Consolidate approved/rejected counts into single query
             var decisionCounts = await _context.DataSubmissions
                 .AsNoTracking()
-                .Where(s => (s.Status == "Integrated" || s.Status == "Failed") && s.OrganizationID == orgId)
+                .Where(s => (s.Status == StatusIntegrated || s.Status == StatusFailed) && s.OrganizationID == orgId)
                 .GroupBy(s => s.Status)
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
-            ViewData["ApprovedCount"] = decisionCounts.Where(s => s.Status == "Integrated").Sum(s => s.Count);
-            ViewData["RejectedCount"] = decisionCounts.Where(s => s.Status == "Failed").Sum(s => s.Count);
+            ViewData["ApprovedCount"] = decisionCounts.Where(s => s.Status == StatusIntegrated).Sum(s => s.Count);
+            ViewData["RejectedCount"] = decisionCounts.Where(s => s.Status == StatusFailed).Sum(s => s.Count);
         }
+
+        private async Task<ApprovalResult> ProcessApprovalAsync(DataSubmission submission, int orgId, int userId)
+        {
+            var result = new ApprovalResult(false, 0, "Failed to load submission. Please try again.");
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var stagingRecords = await GetValidStagingRecordsAsync(submission.SubmissionID);
+                    var upsertCandidates = await BuildUpsertCandidatesAsync(submission, orgId);
+
+                    var counts = ProcessStagingRecords(submission, stagingRecords, upsertCandidates, orgId, userId);
+
+                    UpdateSubmissionAfterApproval(submission, counts.LoadedCount, counts.SkippedCount);
+                    NotifySubmissionApproved(submission, orgId, counts.LoadedCount);
+                    LogSubmissionApproved(submission, userId, orgId, counts.LoadedCount, counts.SkippedCount);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    result = new ApprovalResult(true, counts.LoadedCount, null);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Failed to approve submission {BatchId} (ID: {SubmissionId})", submission.BatchId, submission.SubmissionID);
+                    result = new ApprovalResult(false, 0, $"Failed to load submission {submission.BatchId}. All changes have been rolled back. Reason: {ex.InnerException?.Message ?? ex.Message}");
+                }
+            });
+
+            return result;
+        }
+
+        private async Task<List<StagingRecord>> GetValidStagingRecordsAsync(int submissionId)
+        {
+            return await _context.StagingRecords
+                .Where(r => r.SubmissionID == submissionId && r.ValidationStatus == StatusValid)
+                .OrderBy(r => r.RowNumber)
+                .ToListAsync();
+        }
+
+        private async Task<Dictionary<string, WarehouseRecord>?> BuildUpsertCandidatesAsync(DataSubmission submission, int orgId)
+        {
+            if (submission.LoadMode != LoadModeUpsert)
+            {
+                return null;
+            }
+
+            var candidates = await _context.WarehouseRecords
+                .Where(w => w.TargetTable == submission.TargetTable
+                    && w.OrganizationID == orgId
+                    && w.RecordStatus == StatusActive)
+                .ToListAsync();
+
+            var lookup = new Dictionary<string, WarehouseRecord>();
+            foreach (var candidate in candidates)
+            {
+                try
+                {
+                    var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(candidate.CleanData);
+                    if (dict != null && dict.TryGetValue("id", out var existingId))
+                    {
+                        var key = existingId.ToString();
+                        if (!string.IsNullOrEmpty(key))
+                        {
+                            lookup[key] = candidate;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse clean data for warehouse record {RecordId}", candidate.WarehouseRecordID);
+                }
+            }
+
+            return lookup;
+        }
+
+        private (int LoadedCount, int SkippedCount) ProcessStagingRecords(
+            DataSubmission submission,
+            List<StagingRecord> stagingRecords,
+            Dictionary<string, WarehouseRecord>? upsertCandidates,
+            int orgId,
+            int userId)
+        {
+            var loadedCount = 0;
+            var skippedCount = 0;
+
+            if (submission.LoadMode == LoadModeOverwrite)
+            {
+                ArchiveExistingRecords(submission.TargetTable, orgId);
+            }
+
+            foreach (var staging in stagingRecords)
+            {
+                var cleanDict = _cleanser.CleanseRow(staging.RawData);
+                if (cleanDict == null)
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                if (TryUpsertRecord(submission, staging, cleanDict, upsertCandidates, orgId, userId))
+                {
+                    loadedCount++;
+                    continue;
+                }
+
+                _context.WarehouseRecords.Add(CreateWarehouseRecord(submission, staging, cleanDict, orgId, userId, version: 1));
+                loadedCount++;
+            }
+
+            return (loadedCount, skippedCount);
+        }
+
+        private void ArchiveExistingRecords(string targetTable, int orgId)
+        {
+            var existingRecords = _context.WarehouseRecords
+                .Where(w => w.TargetTable == targetTable && w.OrganizationID == orgId && w.RecordStatus == StatusActive)
+                .ToList();
+
+            foreach (var existing in existingRecords)
+            {
+                existing.RecordStatus = StatusArchived;
+            }
+        }
+
+        private bool TryUpsertRecord(
+            DataSubmission submission,
+            StagingRecord staging,
+            Dictionary<string, object?> cleanDict,
+            Dictionary<string, WarehouseRecord>? upsertCandidates,
+            int orgId,
+            int userId)
+        {
+            if (submission.LoadMode != LoadModeUpsert || upsertCandidates == null || !cleanDict.ContainsKey("id"))
+            {
+                return false;
+            }
+
+            var idValue = cleanDict["id"]?.ToString();
+            if (string.IsNullOrEmpty(idValue) || !upsertCandidates.TryGetValue(idValue, out var existingRecord))
+            {
+                return false;
+            }
+
+            existingRecord.RecordStatus = StatusArchived;
+            var newVersion = existingRecord.Version + 1;
+            _context.WarehouseRecords.Add(CreateWarehouseRecord(submission, staging, cleanDict, orgId, userId, newVersion));
+            return true;
+        }
+
+        private WarehouseRecord CreateWarehouseRecord(
+            DataSubmission submission,
+            StagingRecord staging,
+            Dictionary<string, object?> cleanDict,
+            int orgId,
+            int userId,
+            int version)
+        {
+            return new WarehouseRecord
+            {
+                DataSourceID = staging.DataSourceID,
+                SubmissionID = submission.SubmissionID,
+                BatchId = submission.BatchId,
+                TargetTable = submission.TargetTable,
+                RowNumber = staging.RowNumber,
+                CleanData = JsonSerializer.Serialize(cleanDict),
+                RawDataSnapshot = staging.RawData,
+                RecordStatus = StatusActive,
+                LoadMode = submission.LoadMode,
+                Version = version,
+                Loaded_at = DateTime.UtcNow,
+                LoadedByUserID = userId,
+                OrganizationID = orgId
+            };
+        }
+
+        private void UpdateSubmissionAfterApproval(DataSubmission submission, int loadedCount, int skippedCount)
+        {
+            submission.Status = StatusIntegrated;
+            submission.Integrated_at = DateTime.UtcNow;
+            submission.LoadedRows = loadedCount;
+            submission.SkippedRows = skippedCount;
+        }
+
+        private void NotifySubmissionApproved(DataSubmission submission, int orgId, int loadedCount)
+        {
+            _notif.Notify(submission.SubmittedByUserID, orgId,
+                "Submission Approved",
+                $"Your batch {submission.BatchId} has been approved. {loadedCount} rows loaded into '{submission.TargetTable}'.",
+                NotificationTypeSuccess,
+                "/Staff/StaffNav?section=submit");
+        }
+
+        private void LogSubmissionApproved(DataSubmission submission, int userId, int orgId, int loadedCount, int skippedCount)
+        {
+            _audit.Log("Submission Approved & Loaded", "DataSubmission", submission.SubmissionID, submission.BatchId,
+                $"Approved by Manager | Target: {submission.TargetTable} | Loaded: {loadedCount} rows | Skipped: {skippedCount} | Mode: {submission.LoadMode}",
+                userId, orgId);
+        }
+
+        private sealed record ApprovalResult(bool Success, int LoadedCount, string? ErrorMessage);
     }
 }
