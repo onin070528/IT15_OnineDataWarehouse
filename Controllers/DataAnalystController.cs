@@ -21,10 +21,12 @@ namespace it15_webproject_mvc.Controllers
         private const string StatusHasIssues = "Has Issues";
 
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<DataAnalystController> _logger;
 
-        public DataAnalystController(ApplicationDbContext context)
+        public DataAnalystController(ApplicationDbContext context, ILogger<DataAnalystController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<IActionResult> AnalystNav(string section = "dashboard", string? viewTable = null)
@@ -234,28 +236,14 @@ namespace it15_webproject_mvc.Controllers
             var orgId = GetCurrentOrgId();
 
             // Warehouse table summary
-            var warehouseSummary = await _context.WarehouseRecords
-                .AsNoTracking()
-                .Include(w => w.DataSource)
-                .Where(w => w.OrganizationID == orgId && w.RecordStatus == StatusActive)
-                .GroupBy(w => new { w.TargetTable, w.DataSourceID })
-                .Select(g => new
-                {
-                    SourceName = g.First().DataSource!.SourceName,
-                    TargetTable = g.Key.TargetTable,
-                    LastLoaded = g.Max(w => w.Loaded_at),
-                    TotalRows = g.Count(),
-                    LatestVersion = g.Max(w => w.Version)
-                })
-                .OrderByDescending(s => s.TotalRows)
-                .ToListAsync();
+            var warehouseSummary = await GetWarehouseSummaryAsync(orgId);
             ViewData["WarehouseSummary"] = warehouseSummary;
 
             ViewData["TotalTables"] = warehouseSummary.Select(s => s.TargetTable).Distinct().Count();
             ViewData["TotalWarehouseRows"] = warehouseSummary.Sum(s => s.TotalRows);
 
             // Table names for dropdown
-            var tableNames = warehouseSummary.Select(s => (string)s.TargetTable).Distinct().ToList();
+            var tableNames = warehouseSummary.Select(s => s.TargetTable).Distinct().ToList();
             ViewData["TableNames"] = tableNames;
 
             // If a specific table is selected, load its data rows
@@ -265,6 +253,28 @@ namespace it15_webproject_mvc.Controllers
             }
 
             // Source field mapping overview
+            await LoadFieldMappingsAsync(orgId);
+        }
+
+        private async Task<List<WarehouseSummaryItem>> GetWarehouseSummaryAsync(int orgId)
+        {
+            return await _context.WarehouseRecords
+                .AsNoTracking()
+                .Include(w => w.DataSource)
+                .Where(w => w.OrganizationID == orgId && w.RecordStatus == StatusActive)
+                .GroupBy(w => new { w.TargetTable, w.DataSourceID })
+                .Select(g => new WarehouseSummaryItem(
+                    g.First().DataSource!.SourceName,
+                    g.Key.TargetTable,
+                    g.Max(w => w.Loaded_at),
+                    g.Count(),
+                    g.Max(w => w.Version)))
+                .OrderByDescending(s => s.TotalRows)
+                .ToListAsync();
+        }
+
+        private async Task LoadFieldMappingsAsync(int orgId)
+        {
             var fieldMappings = await _context.DataSources
                 .AsNoTracking()
                 .Where(s => s.OrganizationID == orgId && s.Status == StatusActive)
@@ -304,7 +314,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["SelectedTable"] = viewTable;
         }
 
-        private static List<Dictionary<string, string>> ParseWarehouseRows(
+        private List<Dictionary<string, string>> ParseWarehouseRows(
             IEnumerable<WarehouseRecord> warehouseRows,
             List<string> allColumns)
         {
@@ -321,7 +331,7 @@ namespace it15_webproject_mvc.Controllers
             return parsedRows;
         }
 
-        private static bool TryParseWarehouseRow(
+        private bool TryParseWarehouseRow(
             WarehouseRecord row,
             List<string> allColumns,
             out Dictionary<string, string> rowData)
@@ -356,11 +366,19 @@ namespace it15_webproject_mvc.Controllers
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Failed to parse warehouse record {RecordId}", row.WarehouseRecordID);
                 return false;
             }
         }
+
+        private sealed record WarehouseSummaryItem(
+            string SourceName,
+            string TargetTable,
+            DateTime LastLoaded,
+            int TotalRows,
+            int LatestVersion);
 
         private async Task LoadCleansingData()
         {
