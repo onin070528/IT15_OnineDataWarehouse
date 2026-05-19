@@ -8,7 +8,7 @@ namespace it15_webproject_mvc.Services
 {
     public class DatabaseBackupService : BackgroundService
     {
-        private static readonly Regex DatabaseNamePattern = new("^[A-Za-z0-9_]+$", RegexOptions.Compiled);
+        private static readonly Regex DatabaseNamePattern = new("^[A-Za-z0-9_]+$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(250));
         private static readonly TimeSpan RunInterval = TimeSpan.FromDays(1);
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConfiguration _configuration;
