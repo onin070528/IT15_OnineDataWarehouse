@@ -23,6 +23,7 @@ namespace it15_webproject_mvc.Controllers
         private const string StatusIntegrated = "Integrated";
         private const string StatusFailed = "Failed";
         private const string StatusUnknown = "Unknown";
+        private const string TempDataErrorKey = "Error";
         private readonly ApplicationDbContext _context;
         private readonly ILogger<UserAdminController> _logger;
 
@@ -177,7 +178,7 @@ namespace it15_webproject_mvc.Controllers
 
             if (!records.Any())
             {
-                TempData["Error"] = "No active records found for that table.";
+                TempData[TempDataErrorKey] = "No active records found for that table.";
                 return RedirectToAction("UserNav", new { section = "storage" });
             }
 
@@ -228,7 +229,7 @@ namespace it15_webproject_mvc.Controllers
 
             if (!records.Any())
             {
-                TempData["Error"] = "No archived records found for that table.";
+                TempData[TempDataErrorKey] = "No archived records found for that table.";
                 return RedirectToAction("UserNav", new { section = "storage" });
             }
 
@@ -394,43 +395,14 @@ namespace it15_webproject_mvc.Controllers
             {
                 var warehouseRows = await _context.WarehouseRecords
                     .AsNoTracking()
-                    .Where(w => w.OrganizationID == orgId && w.TargetTable == viewTable && w.RecordStatus == "Active")
+                    .Where(w => w.OrganizationID == orgId && w.TargetTable == viewTable && w.RecordStatus == StatusActive)
                     .OrderByDescending(w => w.Loaded_at)
                     .ThenBy(w => w.RowNumber)
                     .Take(100)
                     .ToListAsync();
 
-                // Parse the CleanData JSON to extract column names and row values
                 var allColumns = new List<string>();
-                var parsedRows = new List<Dictionary<string, string>>();
-
-                foreach (var row in warehouseRows)
-                {
-                    try
-                    {
-                        var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(row.CleanData);
-                        if (dict == null) continue;
-
-                        var rowData = new Dictionary<string, string>();
-                        foreach (var kvp in dict)
-                        {
-                            if (!allColumns.Contains(kvp.Key))
-                                allColumns.Add(kvp.Key);
-
-                            rowData[kvp.Key] = kvp.Value.ValueKind switch
-                            {
-                                JsonValueKind.String => kvp.Value.GetString() ?? "",
-                                JsonValueKind.Number => kvp.Value.GetRawText(),
-                                JsonValueKind.True => "true",
-                                JsonValueKind.False => "false",
-                                JsonValueKind.Null => "",
-                                _ => kvp.Value.GetRawText()
-                            };
-                        }
-                        parsedRows.Add(rowData);
-                    }
-                    catch { }
-                }
+                var parsedRows = WarehouseRowParser.ParseWarehouseRows(warehouseRows, allColumns, _logger);
 
                 ViewData["WarehouseColumns"] = allColumns;
                 ViewData["WarehouseRows"] = parsedRows;
@@ -517,39 +489,39 @@ namespace it15_webproject_mvc.Controllers
                 string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) ||
                 string.IsNullOrWhiteSpace(confirmPassword) || string.IsNullOrWhiteSpace(role))
             {
-                TempData["Error"] = "All fields are required.";
+                TempData[TempDataErrorKey] = "All fields are required.";
                 return RedirectToAction("UserNav", new { section });
             }
 
             if (password != confirmPassword)
             {
-                TempData["Error"] = "Passwords do not match.";
+                TempData[TempDataErrorKey] = "Passwords do not match.";
                 return RedirectToAction("UserNav", new { section });
             }
 
             // Validate password strength: minimum 12 characters and at least one special character
             if (password.Length < 12 || !password.Any(ch => !char.IsLetterOrDigit(ch)))
             {
-                TempData["Error"] = "Password must be at least 12 characters and contain at least one special character.";
+                TempData[TempDataErrorKey] = "Password must be at least 12 characters and contain at least one special character.";
                 return RedirectToAction("UserNav", new { section });
             }
 
             if (await _context.Users.AnyAsync(u => u.Username == username))
             {
-                TempData["Error"] = "Username is already taken.";
+                TempData[TempDataErrorKey] = "Username is already taken.";
                 return RedirectToAction("UserNav", new { section });
             }
 
             if (await _context.Users.AnyAsync(u => u.Email == email))
             {
-                TempData["Error"] = "Email is already registered.";
+                TempData[TempDataErrorKey] = "Email is already registered.";
                 return RedirectToAction("UserNav", new { section });
             }
 
             var assignedRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == role);
             if (assignedRole == null)
             {
-                TempData["Error"] = "Invalid role selected.";
+                TempData[TempDataErrorKey] = "Invalid role selected.";
                 return RedirectToAction("UserNav", new { section });
             }
 
@@ -573,7 +545,7 @@ namespace it15_webproject_mvc.Controllers
             var maxUsers = orgPlan switch { "Premium" => int.MaxValue, "Basic" => 10, _ => 3 };
             if (currentUserCount >= maxUsers)
             {
-                TempData["Error"] = $"User limit reached for your {orgPlan} plan ({maxUsers} users max). Please upgrade your subscription.";
+                TempData[TempDataErrorKey] = $"User limit reached for your {orgPlan} plan ({maxUsers} users max). Please upgrade your subscription.";
                 return RedirectToAction("UserNav", new { section });
             }
 
@@ -586,7 +558,7 @@ namespace it15_webproject_mvc.Controllers
             };
             if (!allowedRoles.Contains(role))
             {
-                TempData["Error"] = $"The '{role}' role is not available on your {orgPlan} plan. Please upgrade your subscription.";
+                TempData[TempDataErrorKey] = $"The '{role}' role is not available on your {orgPlan} plan. Please upgrade your subscription.";
                 return RedirectToAction("UserNav", new { section });
             }
 

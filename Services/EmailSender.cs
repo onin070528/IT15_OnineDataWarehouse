@@ -25,8 +25,6 @@ namespace it15_webproject_mvc.Services
             var password = _configuration["EmailSettings:Password"];
             var fromEmail = _configuration["EmailSettings:FromEmail"];
             var fromName = _configuration["EmailSettings:FromName"];
-            var useSslValue = _configuration["EmailSettings:UseSsl"];
-
             if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(fromEmail))
             {
                 return false;
