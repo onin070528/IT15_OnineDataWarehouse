@@ -23,6 +23,8 @@ namespace it15_webproject_mvc.Controllers
         private const string LoadModeUpsert = "Upsert";
         private const string NotificationTypeSuccess = "Success";
         private const string NotificationTypeError = "Error";
+        private const string TempDataErrorKey = "Error";
+        private const string TempDataSuccessKey = "Success";
 
         private readonly ApplicationDbContext _context;
         private readonly IAuditService _audit;
@@ -105,11 +107,11 @@ namespace it15_webproject_mvc.Controllers
             var approvalResult = await ProcessApprovalAsync(submission, orgId, userId);
             if (!approvalResult.Success)
             {
-                TempData["Error"] = approvalResult.ErrorMessage;
+                TempData[TempDataErrorKey] = approvalResult.ErrorMessage;
             }
             else
             {
-                TempData["Success"] = $"Submission {submission.BatchId} approved - {approvalResult.LoadedCount} rows loaded into warehouse table '{submission.TargetTable}'.";
+                TempData[TempDataSuccessKey] = $"Submission {submission.BatchId} approved - {approvalResult.LoadedCount} rows loaded into warehouse table '{submission.TargetTable}'.";
             }
 
             return RedirectToAction("ManagerNav", new { section = "approvals" });
@@ -135,7 +137,7 @@ namespace it15_webproject_mvc.Controllers
                 GetCurrentUserId(), orgId);
             await _context.SaveChangesAsync();
 
-            TempData["Error"] = $"Submission {submission.BatchId} has been rejected.";
+            TempData[TempDataErrorKey] = $"Submission {submission.BatchId} has been rejected.";
 
             // Notify the staff who submitted
             _notif.Notify(submission.SubmittedByUserID, orgId,
@@ -488,58 +490,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["PendingSubmissions"] = pending;
 
             // Load staging records for each pending submission so Manager can preview the data
-            var pendingIds = pending.Select(p => p.SubmissionID).ToList();
-            var previewRecords = await _context.StagingRecords
-                .Where(r => r.SubmissionID != null && pendingIds.Contains(r.SubmissionID.Value))
-                .OrderBy(r => r.SubmissionID)
-                .ThenBy(r => r.RowNumber)
-                .ToListAsync();
-
-            // Group by submission and parse JSON into columns + rows
-            var previewData = new Dictionary<int, (List<string> Columns, List<Dictionary<string, string>> Rows)>();
-            foreach (var group in previewRecords.GroupBy(r => r.SubmissionID!.Value))
-            {
-                var columns = new List<string>();
-                var rows = new List<Dictionary<string, string>>();
-
-                foreach (var record in group.Take(20)) // Show up to 20 rows per submission
-                {
-                    try
-                    {
-                        var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(record.RawData);
-                        if (dict == null) continue;
-
-                        var rowData = new Dictionary<string, string>
-                        {
-                            ["_status"] = record.ValidationStatus,
-                            ["_message"] = record.ValidationMessage ?? ""
-                        };
-
-                        foreach (var kvp in dict)
-                        {
-                            if (!columns.Contains(kvp.Key))
-                                columns.Add(kvp.Key);
-
-                            rowData[kvp.Key] = kvp.Value.ValueKind switch
-                            {
-                                JsonValueKind.String => kvp.Value.GetString() ?? "",
-                                JsonValueKind.Number => kvp.Value.GetRawText(),
-                                JsonValueKind.True => "true",
-                                JsonValueKind.False => "false",
-                                JsonValueKind.Null => "(null)",
-                                _ => kvp.Value.GetRawText()
-                            };
-                        }
-                        rows.Add(rowData);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to parse preview record {RecordId}", record.StagingRecordID);
-                    }
-                }
-
-                previewData[group.Key] = (columns, rows);
-            }
+            var previewData = await BuildPreviewDataAsync(pending);
             ViewData["PreviewData"] = previewData;
 
             var recent = await _context.DataSubmissions
@@ -562,6 +513,94 @@ namespace it15_webproject_mvc.Controllers
                 .ToListAsync();
             ViewData["ApprovedCount"] = decisionCounts.Where(s => s.Status == StatusIntegrated).Sum(s => s.Count);
             ViewData["RejectedCount"] = decisionCounts.Where(s => s.Status == StatusFailed).Sum(s => s.Count);
+        }
+
+        private async Task<Dictionary<int, (List<string> Columns, List<Dictionary<string, string>> Rows)>> BuildPreviewDataAsync(
+            IReadOnlyCollection<DataSubmission> pending)
+        {
+            var pendingIds = pending.Select(p => p.SubmissionID).ToList();
+            if (pendingIds.Count == 0)
+            {
+                return new Dictionary<int, (List<string> Columns, List<Dictionary<string, string>> Rows)>();
+            }
+
+            var previewRecords = await _context.StagingRecords
+                .Where(r => r.SubmissionID != null && pendingIds.Contains(r.SubmissionID.Value))
+                .OrderBy(r => r.SubmissionID)
+                .ThenBy(r => r.RowNumber)
+                .ToListAsync();
+
+            return BuildPreviewData(previewRecords);
+        }
+
+        private Dictionary<int, (List<string> Columns, List<Dictionary<string, string>> Rows)> BuildPreviewData(
+            IEnumerable<StagingRecord> previewRecords)
+        {
+            var previewData = new Dictionary<int, (List<string> Columns, List<Dictionary<string, string>> Rows)>();
+
+            foreach (var group in previewRecords.GroupBy(r => r.SubmissionID!.Value))
+            {
+                var columns = new List<string>();
+                var rows = new List<Dictionary<string, string>>();
+
+                foreach (var record in group.Take(20))
+                {
+                    if (TryParsePreviewRow(record, columns, out var rowData))
+                    {
+                        rows.Add(rowData);
+                    }
+                }
+
+                previewData[group.Key] = (columns, rows);
+            }
+
+            return previewData;
+        }
+
+        private bool TryParsePreviewRow(
+            StagingRecord record,
+            List<string> columns,
+            out Dictionary<string, string> rowData)
+        {
+            rowData = new Dictionary<string, string>
+            {
+                ["_status"] = record.ValidationStatus,
+                ["_message"] = record.ValidationMessage ?? string.Empty
+            };
+
+            try
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(record.RawData);
+                if (dict == null)
+                {
+                    return false;
+                }
+
+                foreach (var kvp in dict)
+                {
+                    if (!columns.Contains(kvp.Key))
+                    {
+                        columns.Add(kvp.Key);
+                    }
+
+                    rowData[kvp.Key] = kvp.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => kvp.Value.GetString() ?? string.Empty,
+                        JsonValueKind.Number => kvp.Value.GetRawText(),
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        JsonValueKind.Null => "(null)",
+                        _ => kvp.Value.GetRawText()
+                    };
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse preview record {RecordId}", record.StagingRecordID);
+                return false;
+            }
         }
 
         private async Task<ApprovalResult> ProcessApprovalAsync(DataSubmission submission, int orgId, int userId)

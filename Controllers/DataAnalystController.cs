@@ -259,51 +259,9 @@ namespace it15_webproject_mvc.Controllers
             ViewData["TableNames"] = tableNames;
 
             // If a specific table is selected, load its data rows
-            if (!string.IsNullOrEmpty(viewTable) && tableNames.Contains(viewTable))
+            if (TryGetSelectedTable(viewTable, tableNames, out var selectedTable))
             {
-                var warehouseRows = await _context.WarehouseRecords
-                    .AsNoTracking()
-                    .Where(w => w.OrganizationID == orgId && w.TargetTable == viewTable && w.RecordStatus == StatusActive)
-                    .OrderByDescending(w => w.Loaded_at)
-                    .ThenBy(w => w.RowNumber)
-                    .Take(100)
-                    .ToListAsync();
-
-                var allColumns = new List<string>();
-                var parsedRows = new List<Dictionary<string, string>>();
-
-                foreach (var row in warehouseRows)
-                {
-                    try
-                    {
-                        var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(row.CleanData);
-                        if (dict == null) continue;
-
-                        var rowData = new Dictionary<string, string>();
-                        foreach (var kvp in dict)
-                        {
-                            if (!allColumns.Contains(kvp.Key))
-                                allColumns.Add(kvp.Key);
-
-                            rowData[kvp.Key] = kvp.Value.ValueKind switch
-                            {
-                                JsonValueKind.String => kvp.Value.GetString() ?? "",
-                                JsonValueKind.Number => kvp.Value.GetRawText(),
-                                JsonValueKind.True => "true",
-                                JsonValueKind.False => "false",
-                                JsonValueKind.Null => "",
-                                _ => kvp.Value.GetRawText()
-                            };
-                        }
-                        parsedRows.Add(rowData);
-                    }
-                    catch { }
-                }
-
-                ViewData["WarehouseColumns"] = allColumns;
-                ViewData["WarehouseRows"] = parsedRows;
-                ViewData["WarehouseRowCount"] = warehouseRows.Count;
-                ViewData["SelectedTable"] = viewTable;
+                await LoadWarehouseTableData(orgId, selectedTable);
             }
 
             // Source field mapping overview
@@ -313,6 +271,95 @@ namespace it15_webproject_mvc.Controllers
                 .Select(s => new { s.SourceName, s.TargetTable, s.ApiBaseUrl, s.ApiEndpoint })
                 .ToListAsync();
             ViewData["FieldMappings"] = fieldMappings;
+        }
+
+        private static bool TryGetSelectedTable(string? viewTable, IReadOnlyCollection<string> tableNames, out string selectedTable)
+        {
+            if (!string.IsNullOrWhiteSpace(viewTable) && tableNames.Contains(viewTable))
+            {
+                selectedTable = viewTable;
+                return true;
+            }
+
+            selectedTable = string.Empty;
+            return false;
+        }
+
+        private async Task LoadWarehouseTableData(int orgId, string viewTable)
+        {
+            var warehouseRows = await _context.WarehouseRecords
+                .AsNoTracking()
+                .Where(w => w.OrganizationID == orgId && w.TargetTable == viewTable && w.RecordStatus == StatusActive)
+                .OrderByDescending(w => w.Loaded_at)
+                .ThenBy(w => w.RowNumber)
+                .Take(100)
+                .ToListAsync();
+
+            var allColumns = new List<string>();
+            var parsedRows = ParseWarehouseRows(warehouseRows, allColumns);
+
+            ViewData["WarehouseColumns"] = allColumns;
+            ViewData["WarehouseRows"] = parsedRows;
+            ViewData["WarehouseRowCount"] = warehouseRows.Count;
+            ViewData["SelectedTable"] = viewTable;
+        }
+
+        private static List<Dictionary<string, string>> ParseWarehouseRows(
+            IEnumerable<WarehouseRecord> warehouseRows,
+            List<string> allColumns)
+        {
+            var parsedRows = new List<Dictionary<string, string>>();
+
+            foreach (var row in warehouseRows)
+            {
+                if (TryParseWarehouseRow(row, allColumns, out var rowData))
+                {
+                    parsedRows.Add(rowData);
+                }
+            }
+
+            return parsedRows;
+        }
+
+        private static bool TryParseWarehouseRow(
+            WarehouseRecord row,
+            List<string> allColumns,
+            out Dictionary<string, string> rowData)
+        {
+            rowData = new Dictionary<string, string>();
+
+            try
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(row.CleanData);
+                if (dict == null)
+                {
+                    return false;
+                }
+
+                foreach (var kvp in dict)
+                {
+                    if (!allColumns.Contains(kvp.Key))
+                    {
+                        allColumns.Add(kvp.Key);
+                    }
+
+                    rowData[kvp.Key] = kvp.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => kvp.Value.GetString() ?? "",
+                        JsonValueKind.Number => kvp.Value.GetRawText(),
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        JsonValueKind.Null => "",
+                        _ => kvp.Value.GetRawText()
+                    };
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private async Task LoadCleansingData()

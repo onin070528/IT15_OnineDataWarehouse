@@ -453,10 +453,10 @@ namespace it15_webproject_mvc.Controllers
 
             // Get or create the UserAdmin role
             var userAdminRole = await _context.Roles
-                .FirstOrDefaultAsync(r => r.RoleName == "UserAdmin");
+                .FirstOrDefaultAsync(r => r.RoleName == RoleUserAdmin);
             if (userAdminRole == null)
             {
-                userAdminRole = new Models.Role { RoleName = "UserAdmin" };
+                userAdminRole = new Models.Role { RoleName = RoleUserAdmin };
                 _context.Roles.Add(userAdminRole);
                 await _context.SaveChangesAsync();
             }
@@ -478,7 +478,7 @@ namespace it15_webproject_mvc.Controllers
                 Full_name = fullName.Trim(),
                 Email = email.Trim(),
                 Password = BCrypt.Net.BCrypt.HashPassword(password),
-                Account_status = "Active",
+                Account_status = AccountStatusActive,
                 Created_at = DateTime.UtcNow
             };
             _context.Users.Add(user);
@@ -490,7 +490,7 @@ namespace it15_webproject_mvc.Controllers
                 EntityType = "User",
                 EntityId = user.UserID,
                 EntityName = user.Username,
-                Details = $"New organization '{companyName.Trim()}' registered by '{fullName.Trim()}' (UserAdmin)",
+                Details = $"New organization '{companyName.Trim()}' registered by '{fullName.Trim()}' ({RoleUserAdmin})",
                 PerformedByUserID = user.UserID,
                 OrganizationID = organization.OrganizationID,
                 Performed_at = DateTime.UtcNow
