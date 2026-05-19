@@ -6,21 +6,13 @@ using it15_webproject_mvc.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static it15_webproject_mvc.Constants.StatusConstants;
 
 namespace it15_webproject_mvc.Controllers
 {
     [Authorize(Roles = "Staff")]
     public class StaffController : BaseController
     {
-        private const string StatusActive = "Active";
-        private const string StatusPending = "Pending";
-        private const string StatusValid = "Valid";
-        private const string StatusError = "Error";
-        private const string StatusWarning = "Warning";
-        private const string StatusSubmitted = "Submitted";
-        private const string StatusVerified = "Verified";
-        private const string StatusHasIssues = "Has Issues";
-        private const string StatusUnknown = "Unknown";
         private const string EntityStagingRecord = "StagingRecord";
         private readonly ApplicationDbContext _context;
         private readonly ApiIntegrationService _apiService;

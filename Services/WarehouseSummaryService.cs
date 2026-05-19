@@ -1,5 +1,6 @@
 using it15_webproject_mvc.Data;
 using Microsoft.EntityFrameworkCore;
+using static it15_webproject_mvc.Constants.StatusConstants;
 
 namespace it15_webproject_mvc.Services
 {
@@ -14,7 +15,6 @@ namespace it15_webproject_mvc.Services
 
     public class WarehouseSummaryService
     {
-        private const string StatusActive = "Active";
         private readonly ApplicationDbContext _context;
 
         public WarehouseSummaryService(ApplicationDbContext context)

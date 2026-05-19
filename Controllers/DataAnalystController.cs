@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using it15_webproject_mvc.Data;
 using it15_webproject_mvc.Services;
+using static it15_webproject_mvc.Constants.StatusConstants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,16 +13,6 @@ namespace it15_webproject_mvc.Controllers
     [Authorize(Roles = "DataAnalyst")]
     public class DataAnalystController : BaseController
     {
-        private const string StatusActive = "Active";
-        private const string StatusArchived = "Archived";
-        private const string StatusValid = "Valid";
-        private const string StatusError = "Error";
-        private const string StatusWarning = "Warning";
-        private const string StatusPending = "Pending";
-        private const string StatusSubmitted = "Submitted";
-        private const string StatusVerified = "Verified";
-        private const string StatusHasIssues = "Has Issues";
-
         private readonly ApplicationDbContext _context;
         private readonly WarehouseSummaryService _warehouseSummaryService;
         private readonly WarehouseTableService _warehouseTableService;

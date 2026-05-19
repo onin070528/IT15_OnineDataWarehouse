@@ -6,19 +6,13 @@ using it15_webproject_mvc.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static it15_webproject_mvc.Constants.StatusConstants;
 
 namespace it15_webproject_mvc.Controllers
 {
     [Authorize(Roles = "Manager")]
     public class ManagerController : BaseController
     {
-        private const string StatusActive = "Active";
-        private const string StatusArchived = "Archived";
-        private const string StatusIntegrated = "Integrated";
-        private const string StatusSubmitted = "Submitted";
-        private const string StatusFailed = "Failed";
-        private const string StatusValid = "Valid";
-        private const string StatusError = "Error";
         private const string LoadModeOverwrite = "Overwrite";
         private const string LoadModeUpsert = "Upsert";
         private const string NotificationTypeSuccess = "Success";

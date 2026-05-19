@@ -6,23 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using static it15_webproject_mvc.Constants.StatusConstants;
 
 namespace it15_webproject_mvc.Controllers
 {
     [Authorize(Roles = "UserAdmin")]
     public class UserAdminController : BaseController
     {
-        private const string StatusActive = "Active";
-        private const string StatusInactive = "Inactive";
-        private const string StatusArchived = "Archived";
-        private const string StatusValid = "Valid";
-        private const string StatusError = "Error";
-        private const string StatusWarning = "Warning";
-        private const string StatusPending = "Pending";
-        private const string StatusSubmitted = "Submitted";
-        private const string StatusIntegrated = "Integrated";
-        private const string StatusFailed = "Failed";
-        private const string StatusUnknown = "Unknown";
         private const string TempDataErrorKey = "Error";
         private readonly ApplicationDbContext _context;
         private readonly WarehouseSummaryService _warehouseSummaryService;
