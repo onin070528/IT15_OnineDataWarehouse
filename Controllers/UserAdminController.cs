@@ -25,11 +25,16 @@ namespace it15_webproject_mvc.Controllers
         private const string StatusUnknown = "Unknown";
         private const string TempDataErrorKey = "Error";
         private readonly ApplicationDbContext _context;
+        private readonly WarehouseSummaryService _warehouseSummaryService;
         private readonly ILogger<UserAdminController> _logger;
 
-        public UserAdminController(ApplicationDbContext context, ILogger<UserAdminController> logger)
+        public UserAdminController(
+            ApplicationDbContext context,
+            WarehouseSummaryService warehouseSummaryService,
+            ILogger<UserAdminController> logger)
         {
             _context = context;
+            _warehouseSummaryService = warehouseSummaryService;
             _logger = logger;
         }
 
@@ -351,7 +356,7 @@ namespace it15_webproject_mvc.Controllers
         private async Task LoadStorageData(int orgId, string? viewTable)
         {
             // Warehouse records grouped by target table
-            var warehouseSummary = await GetWarehouseSummaryAsync(orgId);
+            var warehouseSummary = await _warehouseSummaryService.GetSummaryAsync(orgId, includeStatus: true, includeBatchCount: true);
             ViewData["WarehouseSummary"] = warehouseSummary;
 
             ViewData["TotalTables"] = warehouseSummary.Select(s => s.TargetTable).Distinct().Count();

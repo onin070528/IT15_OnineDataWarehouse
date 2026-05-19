@@ -93,8 +93,9 @@ namespace it15_webproject_mvc.Services
             var backupFileName = $"{databaseName}_{timestamp}.bak";
             var backupFilePath = Path.Combine(backupPath, backupFileName);
 
+            var safeDatabaseName = new SqlCommandBuilder().QuoteIdentifier(databaseName);
             var backupCommand = $@"
- BACKUP DATABASE [{databaseName}]
+ BACKUP DATABASE {safeDatabaseName}
  TO DISK = @backupPath
  WITH INIT, COMPRESSION, CHECKSUM;";
 

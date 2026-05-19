@@ -5,6 +5,7 @@ using it15_webproject_mvc.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace it15_webproject_mvc.Controllers
 {
@@ -22,11 +23,19 @@ namespace it15_webproject_mvc.Controllers
         private const string StatusHasIssues = "Has Issues";
 
         private readonly ApplicationDbContext _context;
+        private readonly WarehouseSummaryService _warehouseSummaryService;
+        private readonly WarehouseTableService _warehouseTableService;
         private readonly ILogger<DataAnalystController> _logger;
 
-        public DataAnalystController(ApplicationDbContext context, ILogger<DataAnalystController> logger)
+        public DataAnalystController(
+            ApplicationDbContext context,
+            WarehouseSummaryService warehouseSummaryService,
+            WarehouseTableService warehouseTableService,
+            ILogger<DataAnalystController> logger)
         {
             _context = context;
+            _warehouseSummaryService = warehouseSummaryService;
+            _warehouseTableService = warehouseTableService;
             _logger = logger;
         }
 
@@ -237,7 +246,7 @@ namespace it15_webproject_mvc.Controllers
             var orgId = GetCurrentOrgId();
 
             // Warehouse table summary
-            var warehouseSummary = await GetWarehouseSummaryAsync(orgId);
+            var warehouseSummary = await _warehouseSummaryService.GetSummaryAsync(orgId, includeStatus: false, includeBatchCount: false);
             ViewData["WarehouseSummary"] = warehouseSummary;
 
             ViewData["TotalTables"] = warehouseSummary.Select(s => s.TargetTable).Distinct().Count();
@@ -250,7 +259,11 @@ namespace it15_webproject_mvc.Controllers
             // If a specific table is selected, load its data rows
             if (TryGetSelectedTable(viewTable, tableNames, out var selectedTable))
             {
-                await LoadWarehouseTableData(orgId, selectedTable);
+                var tableData = await _warehouseTableService.GetWarehouseTableDataAsync(orgId, selectedTable);
+                ViewData["WarehouseColumns"] = tableData.Columns;
+                ViewData["WarehouseRows"] = tableData.Rows;
+                ViewData["WarehouseRowCount"] = tableData.RowCount;
+                ViewData["SelectedTable"] = selectedTable;
             }
 
             // Source field mapping overview
