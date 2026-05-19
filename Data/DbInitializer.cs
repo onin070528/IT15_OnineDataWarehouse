@@ -31,6 +31,7 @@ namespace it15_webproject_mvc.Data
             var sampleApiBaseUrl = configuration["SeedSettings:SampleApiBaseUrl"]?.Trim();
 
             EnsureWarehouseTable(context, logger);
+            EnsureWarehouseHashColumns(context, logger);
             EnsureSubmissionNewColumns(context, logger);
             EnsureNewTables(context, logger);
             EnsureRoleNewColumns(context, logger);
@@ -438,7 +439,9 @@ namespace it15_webproject_mvc.Data
                             TargetTable NVARCHAR(100) NOT NULL,
                             RowNumber INT NOT NULL DEFAULT 0,
                             CleanData NVARCHAR(MAX) NOT NULL,
+                            CleanDataHash NVARCHAR(64) NOT NULL DEFAULT '',
                             RawDataSnapshot NVARCHAR(MAX) NOT NULL,
+                            RawDataSnapshotHash NVARCHAR(64) NOT NULL DEFAULT '',
                             RecordStatus NVARCHAR(20) NOT NULL DEFAULT 'Active',
                             LoadMode NVARCHAR(20) NOT NULL DEFAULT 'Append',
                             Version INT NOT NULL DEFAULT 1,
@@ -459,7 +462,9 @@ namespace it15_webproject_mvc.Data
                             DataSourceID INTEGER NOT NULL, SubmissionID INTEGER NOT NULL,
                             BatchId TEXT NOT NULL, TargetTable TEXT NOT NULL,
                             RowNumber INTEGER NOT NULL DEFAULT 0, CleanData TEXT NOT NULL,
-                            RawDataSnapshot TEXT NOT NULL, RecordStatus TEXT NOT NULL DEFAULT 'Active',
+                            CleanDataHash TEXT NOT NULL DEFAULT '',
+                            RawDataSnapshot TEXT NOT NULL, RawDataSnapshotHash TEXT NOT NULL DEFAULT '',
+                            RecordStatus TEXT NOT NULL DEFAULT 'Active',
                             LoadMode TEXT NOT NULL DEFAULT 'Append', Version INTEGER NOT NULL DEFAULT 1,
                             Loaded_at TEXT NOT NULL DEFAULT (datetime('now')),
                             LoadedByUserID INTEGER NOT NULL, OrganizationID INTEGER NOT NULL,
@@ -469,6 +474,27 @@ namespace it15_webproject_mvc.Data
                             FOREIGN KEY (OrganizationID) REFERENCES Organizations(OrganizationID)
                         )");
                 }
+            }
+
+        }
+
+        private static void EnsureWarehouseHashColumns(ApplicationDbContext context, ILogger? logger)
+        {
+            if (IsSqlServer(context))
+            {
+                TryExecute(logger, () => context.Database.ExecuteSqlRaw(@"
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('WarehouseRecords') AND name = 'CleanDataHash')
+                        ALTER TABLE WarehouseRecords ADD CleanDataHash NVARCHAR(64) NOT NULL DEFAULT '';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('WarehouseRecords') AND name = 'RawDataSnapshotHash')
+                        ALTER TABLE WarehouseRecords ADD RawDataSnapshotHash NVARCHAR(64) NOT NULL DEFAULT '';"),
+                    "Ensure WarehouseRecords hash columns");
+            }
+            else
+            {
+                TryExecute(logger, () => context.Database.ExecuteSqlRaw("ALTER TABLE WarehouseRecords ADD COLUMN CleanDataHash TEXT NOT NULL DEFAULT ''"),
+                    "Ensure WarehouseRecords.CleanDataHash (SQLite)");
+                TryExecute(logger, () => context.Database.ExecuteSqlRaw("ALTER TABLE WarehouseRecords ADD COLUMN RawDataSnapshotHash TEXT NOT NULL DEFAULT ''"),
+                    "Ensure WarehouseRecords.RawDataSnapshotHash (SQLite)");
             }
         }
 

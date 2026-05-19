@@ -34,7 +34,7 @@ namespace it15_webproject_mvc.Controllers
             _subscriptionService = subscriptionService;
         }
 
-        public async Task<IActionResult> StaffNav(string section = "dashboard")
+        public async Task<IActionResult> StaffNav(string section = "dashboard", string? viewBatchId = null, int page = 1)
         {
             await SetSectionAndOrganizationAsync(_context, _subscriptionService, section);
 
@@ -47,7 +47,7 @@ namespace it15_webproject_mvc.Controllers
                     await LoadUploadData();
                     break;
                 case "verify":
-                    await LoadVerifyData();
+                    await LoadVerifyData(viewBatchId, page);
                     break;
                 case "submit":
                     await LoadSubmitData();
@@ -67,12 +67,16 @@ namespace it15_webproject_mvc.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> AddSource(string sourceName, string apiBaseUrl, string apiEndpoint, string apiKey, string authMethod, string targetTable)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(sourceName) ||
+                string.IsNullOrWhiteSpace(apiBaseUrl) ||
+                string.IsNullOrWhiteSpace(apiEndpoint) ||
+                string.IsNullOrWhiteSpace(targetTable))
             {
-                return BadRequest();
+                TempData["SourceError"] = "Please complete all required fields before adding a source.";
+                return RedirectToAction("StaffNav", new { section = "sources" });
             }
 
             var userId = GetCurrentUserId();
@@ -233,6 +237,102 @@ namespace it15_webproject_mvc.Controllers
             TempData["PullBatchId"] = batchId;
 
             return RedirectToAction("StaffNav", new { section = "verify" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRecordMessage(int recordId, string? message)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            var orgId = GetCurrentOrgId();
+            var userId = GetCurrentUserId();
+
+            var record = await _context.StagingRecords
+                .Include(r => r.DataSource)
+                .FirstOrDefaultAsync(r => r.StagingRecordID == recordId && r.DataSource!.OrganizationID == orgId);
+
+            if (record == null) return NotFound();
+
+            record.ValidationMessage = string.IsNullOrWhiteSpace(message) ? null : message.Trim();
+
+            _audit.Log("Record Comment Updated", EntityStagingRecord, record.StagingRecordID, record.BatchId,
+                $"Row #{record.RowNumber} message updated",
+                userId, orgId);
+
+            await _context.SaveChangesAsync();
+
+            TempData["ValidateSuccess"] = $"Comment updated for row #{record.RowNumber}.";
+            TempData["ValidateBatchId"] = record.BatchId;
+
+            return RedirectToAction("StaffNav", new { section = "verify", viewBatchId = record.BatchId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkRecordValid(int recordId)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            var orgId = GetCurrentOrgId();
+            var userId = GetCurrentUserId();
+
+            var record = await _context.StagingRecords
+                .Include(r => r.DataSource)
+                .FirstOrDefaultAsync(r => r.StagingRecordID == recordId && r.DataSource!.OrganizationID == orgId);
+
+            if (record == null) return NotFound();
+
+            record.ValidationStatus = StatusValid;
+
+            _audit.Log("Record Marked Valid", EntityStagingRecord, record.StagingRecordID, record.BatchId,
+                $"Row #{record.RowNumber} marked valid",
+                userId, orgId);
+
+            await _context.SaveChangesAsync();
+
+            TempData["ValidateSuccess"] = $"Row #{record.RowNumber} marked valid.";
+            TempData["ValidateBatchId"] = record.BatchId;
+
+            return RedirectToAction("StaffNav", new { section = "verify", viewBatchId = record.BatchId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkRecordInvalid(int recordId)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            var orgId = GetCurrentOrgId();
+            var userId = GetCurrentUserId();
+
+            var record = await _context.StagingRecords
+                .Include(r => r.DataSource)
+                .FirstOrDefaultAsync(r => r.StagingRecordID == recordId && r.DataSource!.OrganizationID == orgId);
+
+            if (record == null) return NotFound();
+
+            record.ValidationStatus = StatusError;
+
+            _audit.Log("Record Marked Invalid", EntityStagingRecord, record.StagingRecordID, record.BatchId,
+                $"Row #{record.RowNumber} marked invalid",
+                userId, orgId);
+
+            await _context.SaveChangesAsync();
+
+            TempData["ValidateSuccess"] = $"Row #{record.RowNumber} marked invalid.";
+            TempData["ValidateBatchId"] = record.BatchId;
+
+            return RedirectToAction("StaffNav", new { section = "verify", viewBatchId = record.BatchId });
         }
 
         // === STEP 2: VERIFY / VALIDATE DATA ===
@@ -612,9 +712,11 @@ namespace it15_webproject_mvc.Controllers
             ViewData["RecentBatches"] = recentBatches;
         }
 
-        private async Task LoadVerifyData()
+        private async Task LoadVerifyData(string? viewBatchId, int page)
         {
             var orgId = GetCurrentOrgId();
+            const int pageSize = 20;
+            var currentPage = Math.Max(page, 1);
 
             // Get the DataSource IDs that belong to this org (simple, fast query)
             var orgSourceIds = await _context.DataSources
@@ -667,20 +769,30 @@ namespace it15_webproject_mvc.Controllers
             ViewData["VerifyBatches"] = batchResults;
 
             // If there's a specific batch to preview (from TempData or the first pending batch)
-            var previewBatchId = TempData["ValidateBatchId"] as string
+            var previewBatchId = viewBatchId
+                                ?? TempData["ValidateBatchId"] as string
                                 ?? TempData["PullBatchId"] as string
                                 ?? batchResults.FirstOrDefault()?.BatchId;
 
             if (previewBatchId != null)
             {
+                var totalRows = await _context.StagingRecords
+                    .AsNoTracking()
+                    .Where(r => r.BatchId == previewBatchId)
+                    .CountAsync();
+
                 var previewRecords = await _context.StagingRecords
                     .AsNoTracking()
                     .Where(r => r.BatchId == previewBatchId)
                     .OrderBy(r => r.RowNumber)
-                    .Take(20)
+                    .Skip((currentPage - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync();
                 ViewData["PreviewRecords"] = previewRecords;
                 ViewData["PreviewBatchId"] = previewBatchId;
+                ViewData["PreviewPage"] = currentPage;
+                ViewData["PreviewPageSize"] = pageSize;
+                ViewData["PreviewTotalRows"] = totalRows;
 
                 var batchInfo = batchResults.FirstOrDefault(b => b.BatchId == previewBatchId);
                 ViewData["PreviewBatchInfo"] = batchInfo;

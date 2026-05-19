@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using it15_webproject_mvc.Data;
 using it15_webproject_mvc.Models;
@@ -761,6 +763,9 @@ namespace it15_webproject_mvc.Controllers
             int userId,
             int version)
         {
+            var cleanDataJson = JsonSerializer.Serialize(cleanDict);
+            var rawSnapshot = staging.RawData;
+
             return new WarehouseRecord
             {
                 DataSourceID = staging.DataSourceID,
@@ -768,8 +773,10 @@ namespace it15_webproject_mvc.Controllers
                 BatchId = submission.BatchId,
                 TargetTable = submission.TargetTable,
                 RowNumber = staging.RowNumber,
-                CleanData = JsonSerializer.Serialize(cleanDict),
-                RawDataSnapshot = staging.RawData,
+                CleanData = cleanDataJson,
+                CleanDataHash = ComputeSha256Hash(cleanDataJson),
+                RawDataSnapshot = rawSnapshot,
+                RawDataSnapshotHash = ComputeSha256Hash(rawSnapshot),
                 RecordStatus = StatusActive,
                 LoadMode = submission.LoadMode,
                 Version = version,
@@ -777,6 +784,23 @@ namespace it15_webproject_mvc.Controllers
                 LoadedByUserID = userId,
                 OrganizationID = orgId
             };
+        }
+
+        private static string ComputeSha256Hash(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+            var builder = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+
+            return builder.ToString();
         }
 
         private static void UpdateSubmissionAfterApproval(DataSubmission submission, int loadedCount, int skippedCount)

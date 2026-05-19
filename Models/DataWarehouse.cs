@@ -313,11 +313,17 @@ namespace it15_webproject_mvc.Models
         [Required]
         public string CleanData { get; set; } = string.Empty;
 
+        [Required, MaxLength(64)]
+        public string CleanDataHash { get; set; } = string.Empty;
+
         /// <summary>
         /// Snapshot of the original raw data before cleansing, for auditing.
         /// </summary>
         [Required]
         public string RawDataSnapshot { get; set; } = string.Empty;
+
+        [Required, MaxLength(64)]
+        public string RawDataSnapshotHash { get; set; } = string.Empty;
 
         [Required, MaxLength(20)]
         public string RecordStatus { get; set; } = "Active"; // Active, Archived, Deleted

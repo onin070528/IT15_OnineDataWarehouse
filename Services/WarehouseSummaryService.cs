@@ -1,4 +1,5 @@
 using it15_webproject_mvc.Data;
+using it15_webproject_mvc.Data;
 using Microsoft.EntityFrameworkCore;
 using static it15_webproject_mvc.Constants.StatusConstants;
 
@@ -24,21 +25,47 @@ namespace it15_webproject_mvc.Services
 
         public async Task<List<WarehouseSummaryItem>> GetSummaryAsync(int orgId, bool includeStatus, bool includeBatchCount)
         {
-            return await _context.WarehouseRecords
+            var warehouseRows = await _context.WarehouseRecords
                 .AsNoTracking()
-                .Include(w => w.DataSource)
                 .Where(w => w.OrganizationID == orgId && w.RecordStatus == StatusActive)
-                .GroupBy(w => new { w.TargetTable, w.DataSourceID })
-                .Select(g => new WarehouseSummaryItem(
-                    g.First().DataSource!.SourceName,
-                    g.Key.TargetTable,
-                    g.Max(w => w.Loaded_at),
-                    g.Count(),
-                    g.Max(w => w.Version),
-                    includeStatus ? g.First().DataSource!.Status : null,
-                    includeBatchCount ? g.Select(w => w.BatchId).Distinct().Count() : null))
-                .OrderByDescending(s => s.TotalRows)
+                .Select(w => new
+                {
+                    w.TargetTable,
+                    w.DataSourceID,
+                    w.Loaded_at,
+                    w.Version,
+                    w.BatchId
+                })
                 .ToListAsync();
+
+            if (warehouseRows.Count == 0)
+            {
+                return [];
+            }
+
+            var sourceIds = warehouseRows.Select(w => w.DataSourceID).Distinct().ToList();
+            var sources = await _context.DataSources
+                .AsNoTracking()
+                .Where(s => sourceIds.Contains(s.DataSourceID))
+                .Select(s => new { s.DataSourceID, s.SourceName, s.Status })
+                .ToDictionaryAsync(s => s.DataSourceID);
+
+            return warehouseRows
+                .GroupBy(w => new { w.TargetTable, w.DataSourceID })
+                .Select(g =>
+                {
+                    sources.TryGetValue(g.Key.DataSourceID, out var source);
+                    return new WarehouseSummaryItem(
+                        source?.SourceName ?? "Unknown",
+                        g.Key.TargetTable,
+                        g.Max(x => x.Loaded_at),
+                        g.Count(),
+                        g.Max(x => x.Version),
+                        includeStatus ? source?.Status : null,
+                        includeBatchCount ? g.Select(x => x.BatchId).Distinct().Count() : null);
+                })
+                .OrderByDescending(s => s.TotalRows)
+                .ToList();
         }
     }
 }
