@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Claims;
 using System.Text.Json;
 using it15_webproject_mvc.Data;
 using it15_webproject_mvc.Services;
@@ -16,15 +17,18 @@ namespace it15_webproject_mvc.Controllers
         private const string TempDataErrorKey = "Error";
         private readonly ApplicationDbContext _context;
         private readonly WarehouseSummaryService _warehouseSummaryService;
+        private readonly SubscriptionService _subscriptionService;
         private readonly ILogger<UserAdminController> _logger;
 
         public UserAdminController(
             ApplicationDbContext context,
             WarehouseSummaryService warehouseSummaryService,
+            SubscriptionService subscriptionService,
             ILogger<UserAdminController> logger)
         {
             _context = context;
             _warehouseSummaryService = warehouseSummaryService;
+            _subscriptionService = subscriptionService;
             _logger = logger;
         }
 
@@ -52,7 +56,8 @@ namespace it15_webproject_mvc.Controllers
                     var orgId = adminUser.OrganizationID;
                     // Always use the DB value as source of truth
                     var subPlan = adminUser.Organization?.SubscriptionPlan ?? "Free";
-                    ViewData["SubscriptionPlan"] = subPlan;
+                    var updatedPlan = await _subscriptionService.EnsureCurrentPlanAsync(orgId, subPlan);
+                    ViewData["SubscriptionPlan"] = updatedPlan;
 
                     var orgUsers = await _context.Users
                         .AsNoTracking()

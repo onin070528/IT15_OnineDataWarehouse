@@ -18,18 +18,25 @@ namespace it15_webproject_mvc.Controllers
         private readonly ApiIntegrationService _apiService;
         private readonly IAuditService _audit;
         private readonly INotificationService _notif;
+        private readonly SubscriptionService _subscriptionService;
 
-        public StaffController(ApplicationDbContext context, ApiIntegrationService apiService, IAuditService audit, INotificationService notif)
+        public StaffController(
+            ApplicationDbContext context,
+            ApiIntegrationService apiService,
+            IAuditService audit,
+            INotificationService notif,
+            SubscriptionService subscriptionService)
         {
             _context = context;
             _apiService = apiService;
             _audit = audit;
             _notif = notif;
+            _subscriptionService = subscriptionService;
         }
 
         public async Task<IActionResult> StaffNav(string section = "dashboard")
         {
-            await SetSectionAndOrganizationAsync(_context, section);
+            await SetSectionAndOrganizationAsync(_context, _subscriptionService, section);
 
             switch (section.ToLower())
             {

@@ -41,6 +41,7 @@ builder.Services.AddScoped<IDataCleansingService, DataCleansingService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<WarehouseSummaryService>();
 builder.Services.AddScoped<WarehouseTableService>();
+builder.Services.AddScoped<SubscriptionService>();
 builder.Services.AddSingleton<IEmailSender, EmailSender>();
 builder.Services.AddHostedService<RetentionPolicyService>();
 builder.Services.AddHostedService<DatabaseBackupService>();

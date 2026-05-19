@@ -57,13 +57,15 @@ namespace it15_webproject_mvc.Controllers
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IEmailSender _emailSender;
+        private readonly SubscriptionService _subscriptionService;
 
         public AuthController(
             ApplicationDbContext context,
             IDataProtectionProvider dataProtectionProvider,
             IConfiguration configuration,
             IHttpClientFactory httpClientFactory,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            SubscriptionService subscriptionService)
         {
             _context = context;
             _passwordResetProtector = dataProtectionProvider
@@ -75,6 +77,7 @@ namespace it15_webproject_mvc.Controllers
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
             _emailSender = emailSender;
+            _subscriptionService = subscriptionService;
         }
 
         [HttpPost("login")]
@@ -123,7 +126,9 @@ namespace it15_webproject_mvc.Controllers
             }
 
             var roleName = user.Role?.RoleName ?? RoleStaff;
-            var subPlan = user.Organization?.SubscriptionPlan ?? SubscriptionFree;
+            var subPlan = user.Organization == null
+                ? SubscriptionFree
+                : await _subscriptionService.EnsureCurrentPlanAsync(user.OrganizationID, user.Organization.SubscriptionPlan);
 
             var roleAccessError = await ValidateRoleAccessAsync(user, roleName, subPlan, username);
             if (roleAccessError != null)
@@ -528,7 +533,9 @@ namespace it15_webproject_mvc.Controllers
 
             var roleName = user.Role?.RoleName ?? RoleStaff;
             var orgName = user.Organization?.OrganizationName ?? "My Company";
-            var subPlan = user.Organization?.SubscriptionPlan ?? SubscriptionFree;
+            var subPlan = user.Organization == null
+                ? SubscriptionFree
+                : await _subscriptionService.EnsureCurrentPlanAsync(user.OrganizationID, user.Organization.SubscriptionPlan);
 
             var claims = new List<Claim>
             {

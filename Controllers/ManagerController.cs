@@ -24,20 +24,28 @@ namespace it15_webproject_mvc.Controllers
         private readonly IAuditService _audit;
         private readonly IDataCleansingService _cleanser;
         private readonly INotificationService _notif;
+        private readonly SubscriptionService _subscriptionService;
         private readonly ILogger<ManagerController> _logger;
 
-        public ManagerController(ApplicationDbContext context, IAuditService audit, IDataCleansingService cleanser, INotificationService notif, ILogger<ManagerController> logger)
+        public ManagerController(
+            ApplicationDbContext context,
+            IAuditService audit,
+            IDataCleansingService cleanser,
+            INotificationService notif,
+            SubscriptionService subscriptionService,
+            ILogger<ManagerController> logger)
         {
             _context = context;
             _audit = audit;
             _cleanser = cleanser;
             _notif = notif;
+            _subscriptionService = subscriptionService;
             _logger = logger;
         }
 
         public async Task<IActionResult> ManagerNav(string section = "dashboard")
         {
-            await SetSectionAndOrganizationAsync(_context, section);
+            await SetSectionAndOrganizationAsync(_context, _subscriptionService, section);
 
             switch (section.ToLower())
             {

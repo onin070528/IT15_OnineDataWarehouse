@@ -16,23 +16,26 @@ namespace it15_webproject_mvc.Controllers
         private readonly ApplicationDbContext _context;
         private readonly WarehouseSummaryService _warehouseSummaryService;
         private readonly WarehouseTableService _warehouseTableService;
+        private readonly SubscriptionService _subscriptionService;
         private readonly ILogger<DataAnalystController> _logger;
 
         public DataAnalystController(
             ApplicationDbContext context,
             WarehouseSummaryService warehouseSummaryService,
             WarehouseTableService warehouseTableService,
+            SubscriptionService subscriptionService,
             ILogger<DataAnalystController> logger)
         {
             _context = context;
             _warehouseSummaryService = warehouseSummaryService;
             _warehouseTableService = warehouseTableService;
+            _subscriptionService = subscriptionService;
             _logger = logger;
         }
 
         public async Task<IActionResult> AnalystNav(string section = "dashboard", string? viewTable = null)
         {
-            await SetSectionAndOrganizationAsync(_context, section);
+            await SetSectionAndOrganizationAsync(_context, _subscriptionService, section);
             ViewData["ViewTable"] = viewTable;
 
             switch (section.ToLower())
