@@ -12,6 +12,16 @@ namespace it15_webproject_mvc.Controllers
     [Authorize(Roles = "Staff")]
     public class StaffController : BaseController
     {
+        private const string StatusActive = "Active";
+        private const string StatusPending = "Pending";
+        private const string StatusValid = "Valid";
+        private const string StatusError = "Error";
+        private const string StatusWarning = "Warning";
+        private const string StatusSubmitted = "Submitted";
+        private const string StatusVerified = "Verified";
+        private const string StatusHasIssues = "Has Issues";
+        private const string StatusUnknown = "Unknown";
+        private const string EntityStagingRecord = "StagingRecord";
         private readonly ApplicationDbContext _context;
         private readonly ApiIntegrationService _apiService;
         private readonly IAuditService _audit;
@@ -35,30 +45,28 @@ namespace it15_webproject_mvc.Controllers
             var subPlan = org?.SubscriptionPlan ?? "Free";
             ViewData["SubscriptionPlan"] = subPlan;
 
-            var userId = GetCurrentUserId();
-
             switch (section.ToLower())
             {
                 case "dashboard":
-                    await LoadDashboardData(userId);
+                    await LoadDashboardData();
                     break;
                 case "upload":
-                    await LoadUploadData(userId);
+                    await LoadUploadData();
                     break;
                 case "verify":
-                    await LoadVerifyData(userId);
+                    await LoadVerifyData();
                     break;
                 case "submit":
-                    await LoadSubmitData(userId);
+                    await LoadSubmitData();
                     break;
                 case "reports":
-                    await LoadReportsData(userId);
+                    await LoadReportsData();
                     break;
                 case "sources":
-                    await LoadSourcesData(userId);
+                    await LoadSourcesData();
                     break;
                 case "history":
-                    await LoadHistoryData(userId);
+                    await LoadHistoryData();
                     break;
             }
 
@@ -94,7 +102,7 @@ namespace it15_webproject_mvc.Controllers
                 ApiKey = apiKey ?? "",
                 AuthMethod = authMethod,
                 TargetTable = targetTable,
-                Status = "Active",
+                Status = StatusActive,
                 CreatedByUserID = userId,
                 OrganizationID = orgId,
                 Created_at = DateTime.UtcNow
@@ -212,7 +220,7 @@ namespace it15_webproject_mvc.Controllers
                     BatchId = batchId,
                     RawData = JsonSerializer.Serialize(row),
                     RowNumber = rowNumber++,
-                    ValidationStatus = "Pending",
+                    ValidationStatus = StatusPending,
                     Pulled_at = DateTime.UtcNow,
                     PulledByUserID = userId
                 };
@@ -222,7 +230,7 @@ namespace it15_webproject_mvc.Controllers
             // Update last sync
             source.Last_sync = DateTime.UtcNow;
 
-            _audit.Log("Data Pulled", "StagingRecord", source.DataSourceID, source.SourceName,
+            _audit.Log("Data Pulled", EntityStagingRecord, source.DataSourceID, source.SourceName,
                 $"Batch: {batchId} | Rows: {result.RowCount} | Target: {source.TargetTable}",
                 userId, orgId);
 
@@ -270,20 +278,20 @@ namespace it15_webproject_mvc.Controllers
 
                 if (issues.Count > 0)
                 {
-                    record.ValidationStatus = issues.Any(i => i.Contains("is empty")) ? "Warning" : "Error";
+                    record.ValidationStatus = issues.Any(i => i.Contains("is empty")) ? StatusWarning : StatusError;
                     record.ValidationMessage = string.Join("; ", issues);
                 }
                 else
                 {
-                    record.ValidationStatus = "Valid";
+                    record.ValidationStatus = StatusValid;
                     record.ValidationMessage = null;
                 }
             }
 
-            var validCount = records.Count(r => r.ValidationStatus == "Valid");
-            var warnCount = records.Count(r => r.ValidationStatus == "Warning");
-            var errCount = records.Count(r => r.ValidationStatus == "Error");
-            _audit.Log("Batch Validated", "StagingRecord", null, batchId,
+            var validCount = records.Count(r => r.ValidationStatus == StatusValid);
+            var warnCount = records.Count(r => r.ValidationStatus == StatusWarning);
+            var errCount = records.Count(r => r.ValidationStatus == StatusError);
+            _audit.Log("Batch Validated", EntityStagingRecord, null, batchId,
                 $"Rows: {records.Count} | Valid: {validCount} | Warnings: {warnCount} | Errors: {errCount}",
                 GetCurrentUserId(), orgId);
 
@@ -333,10 +341,10 @@ namespace it15_webproject_mvc.Controllers
 
             var oldStatus = record.ValidationStatus;
             record.RawData = correctedJson;
-            record.ValidationStatus = "Pending";
+            record.ValidationStatus = StatusPending;
             record.ValidationMessage = null;
 
-            _audit.Log("Record Corrected", "StagingRecord", record.StagingRecordID, record.BatchId,
+            _audit.Log("Record Corrected", EntityStagingRecord, record.StagingRecordID, record.BatchId,
                 $"Row #{record.RowNumber} corrected | Previous status: {oldStatus}",
                 userId, orgId);
 
@@ -369,20 +377,20 @@ namespace it15_webproject_mvc.Controllers
 
             if (!records.Any()) return NotFound();
 
-            var firstRecord = records.First();
-            var validCount = records.Count(r => r.ValidationStatus == "Valid");
-            var errorCount = records.Count(r => r.ValidationStatus == "Error");
+            var firstRecord = records[0];
+            var validCount = records.Count(r => r.ValidationStatus == StatusValid);
+            var errorCount = records.Count(r => r.ValidationStatus == StatusError);
 
             var submission = new DataSubmission
             {
                 BatchId = batchId,
                 DataSourceID = firstRecord.DataSourceID,
-                TargetTable = firstRecord.DataSource?.TargetTable ?? "unknown",
+                TargetTable = firstRecord.DataSource?.TargetTable ?? StatusUnknown,
                 TotalRows = records.Count,
                 ValidRows = validCount,
                 ErrorRows = errorCount,
                 LoadMode = loadMode ?? "Append",
-                Status = "Submitted",
+                Status = StatusSubmitted,
                 Notes = notes,
                 Created_at = DateTime.UtcNow,
                 Submitted_at = DateTime.UtcNow,
@@ -443,11 +451,11 @@ namespace it15_webproject_mvc.Controllers
                 return RedirectToAction("StaffNav", new { section = "upload" });
             }
 
-            var batchId = orphanedRecords.First().BatchId;
+            var batchId = orphanedRecords[0].BatchId;
             var count = orphanedRecords.Count;
             _context.StagingRecords.RemoveRange(orphanedRecords);
 
-            _audit.Log("Batch Discarded", "StagingRecord", source.DataSourceID, source.SourceName,
+            _audit.Log("Batch Discarded", EntityStagingRecord, source.DataSourceID, source.SourceName,
                 $"Discarded batch {batchId} | {count} staging records removed",
                 userId, orgId);
 
@@ -466,7 +474,7 @@ namespace it15_webproject_mvc.Controllers
 
         // === PRIVATE HELPERS ===
 
-        private async Task LoadDashboardData(int userId)
+        private async Task LoadDashboardData()
         {
             var orgId = GetCurrentOrgId();
 
@@ -483,7 +491,7 @@ namespace it15_webproject_mvc.Controllers
                 .Select(r => r.BatchId).Distinct().CountAsync();
             var pendingVerify = await _context.StagingRecords
                 .AsNoTracking()
-                .Where(r => r.ValidationStatus == "Pending" && orgSourceIds.Contains(r.DataSourceID))
+                .Where(r => r.ValidationStatus == StatusPending && orgSourceIds.Contains(r.DataSourceID))
                 .Select(r => r.BatchId).Distinct().CountAsync();
 
             // Consolidate submission counts into a single query
@@ -525,8 +533,8 @@ namespace it15_webproject_mvc.Controllers
                     RowCount = g.Count(),
                     PulledAt = g.Min(r => r.Pulled_at),
                     HasSubmitted = g.Any(r => r.SubmissionID != null),
-                    AllValid = g.All(r => r.ValidationStatus == "Valid"),
-                    HasPending = g.Any(r => r.ValidationStatus == "Pending")
+                    AllValid = g.All(r => r.ValidationStatus == StatusValid),
+                    HasPending = g.Any(r => r.ValidationStatus == StatusPending)
                 })
                 .OrderByDescending(b => b.PulledAt)
                 .Take(10)
@@ -541,23 +549,21 @@ namespace it15_webproject_mvc.Controllers
             var recentBatches = recentBatchData.Select(b => new
             {
                 b.BatchId,
-                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : "Unknown",
-                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : "Unknown",
+                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : StatusUnknown,
+                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : StatusUnknown,
                 b.RowCount,
                 b.PulledAt,
-                Status = b.HasSubmitted ? "Submitted" :
-                         b.AllValid ? "Verified" :
-                         b.HasPending ? "Pending" : "Has Issues"
+                Status = GetBatchStatus(b.HasSubmitted, b.AllValid, b.HasPending)
             }).ToList();
             ViewData["RecentBatches"] = recentBatches;
         }
 
-        private async Task LoadUploadData(int userId)
+        private async Task LoadUploadData()
         {
             var orgId = GetCurrentOrgId();
             var sources = await _context.DataSources
                 .AsNoTracking()
-                .Where(s => s.Status == "Active" && s.OrganizationID == orgId)
+                .Where(s => s.Status == StatusActive && s.OrganizationID == orgId)
                 .OrderBy(s => s.SourceName)
                 .ToListAsync();
             ViewData["DataSources"] = sources;
@@ -588,8 +594,8 @@ namespace it15_webproject_mvc.Controllers
                     RowCount = g.Count(),
                     PulledAt = g.Min(r => r.Pulled_at),
                     HasSubmitted = g.Any(r => r.SubmissionID != null),
-                    AllValid = g.All(r => r.ValidationStatus == "Valid"),
-                    HasPending = g.Any(r => r.ValidationStatus == "Pending")
+                    AllValid = g.All(r => r.ValidationStatus == StatusValid),
+                    HasPending = g.Any(r => r.ValidationStatus == StatusPending)
                 })
                 .OrderByDescending(b => b.PulledAt)
                 .Take(10)
@@ -604,18 +610,16 @@ namespace it15_webproject_mvc.Controllers
             var recentBatches = recentBatchData.Select(b => new
             {
                 b.BatchId,
-                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : "Unknown",
-                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : "Unknown",
+                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : StatusUnknown,
+                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : StatusUnknown,
                 b.RowCount,
                 b.PulledAt,
-                Status = b.HasSubmitted ? "Submitted" :
-                         b.AllValid ? "Verified" :
-                         b.HasPending ? "Pending" : "Has Issues"
+                Status = GetBatchStatus(b.HasSubmitted, b.AllValid, b.HasPending)
             }).ToList();
             ViewData["RecentBatches"] = recentBatches;
         }
 
-        private async Task LoadVerifyData(int userId)
+        private async Task LoadVerifyData()
         {
             var orgId = GetCurrentOrgId();
 
@@ -636,10 +640,10 @@ namespace it15_webproject_mvc.Controllers
                     BatchId = g.Key.BatchId,
                     DataSourceID = g.Key.DataSourceID,
                     TotalRows = g.Count(),
-                    ValidRows = g.Count(r => r.ValidationStatus == "Valid"),
-                    ErrorRows = g.Count(r => r.ValidationStatus == "Error"),
-                    WarningRows = g.Count(r => r.ValidationStatus == "Warning"),
-                    PendingRows = g.Count(r => r.ValidationStatus == "Pending"),
+                    ValidRows = g.Count(r => r.ValidationStatus == StatusValid),
+                    ErrorRows = g.Count(r => r.ValidationStatus == StatusError),
+                    WarningRows = g.Count(r => r.ValidationStatus == StatusWarning),
+                    PendingRows = g.Count(r => r.ValidationStatus == StatusPending),
                     PulledAt = g.Min(r => r.Pulled_at)
                 })
                 .OrderByDescending(b => b.PulledAt)
@@ -658,8 +662,8 @@ namespace it15_webproject_mvc.Controllers
             var batchResults = batches.Select(b => new
             {
                 b.BatchId,
-                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : "Unknown",
-                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : "Unknown",
+                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : StatusUnknown,
+                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : StatusUnknown,
                 b.TotalRows,
                 b.ValidRows,
                 b.ErrorRows,
@@ -690,7 +694,7 @@ namespace it15_webproject_mvc.Controllers
             }
         }
 
-        private async Task LoadSubmitData(int userId)
+        private async Task LoadSubmitData()
         {
             var orgId = GetCurrentOrgId();
 
@@ -703,15 +707,15 @@ namespace it15_webproject_mvc.Controllers
             // Get verified batches ready for submission
             var readyBatchData = await _context.StagingRecords
                 .AsNoTracking()
-                .Where(r => r.SubmissionID == null && r.ValidationStatus != "Pending" && orgSourceIds.Contains(r.DataSourceID))
+                .Where(r => r.SubmissionID == null && r.ValidationStatus != StatusPending && orgSourceIds.Contains(r.DataSourceID))
                 .GroupBy(r => new { r.BatchId, r.DataSourceID })
                 .Select(g => new
                 {
                     BatchId = g.Key.BatchId,
                     DataSourceID = g.Key.DataSourceID,
                     TotalRows = g.Count(),
-                    ValidRows = g.Count(r => r.ValidationStatus == "Valid"),
-                    ErrorRows = g.Count(r => r.ValidationStatus == "Error"),
+                    ValidRows = g.Count(r => r.ValidationStatus == StatusValid),
+                    ErrorRows = g.Count(r => r.ValidationStatus == StatusError),
                     PulledAt = g.Min(r => r.Pulled_at)
                 })
                 .OrderByDescending(b => b.PulledAt)
@@ -728,8 +732,8 @@ namespace it15_webproject_mvc.Controllers
             var readyBatches = readyBatchData.Select(b => new
             {
                 b.BatchId,
-                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : "Unknown",
-                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : "Unknown",
+                DataSourceName = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].SourceName : StatusUnknown,
+                TargetTable = sourceInfo.ContainsKey(b.DataSourceID) ? sourceInfo[b.DataSourceID].TargetTable : StatusUnknown,
                 b.TotalRows,
                 b.ValidRows,
                 b.ErrorRows,
@@ -748,7 +752,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["Submissions"] = submissions;
         }
 
-        private async Task LoadReportsData(int userId)
+        private async Task LoadReportsData()
         {
             var orgId = GetCurrentOrgId();
 
@@ -781,7 +785,7 @@ namespace it15_webproject_mvc.Controllers
                     s.Status,
                     s.Last_sync,
                     BatchCount = s.StagingRecords.Select(r => r.BatchId).Distinct().Count(),
-                    TotalRows = s.StagingRecords.Count()
+                    TotalRows = s.StagingRecords.Count
                 })
                 .OrderByDescending(s => s.TotalRows)
                 .ToListAsync();
@@ -839,7 +843,27 @@ namespace it15_webproject_mvc.Controllers
             ViewData["ValidationSummary"] = validationSummary;
         }
 
-        private async Task LoadSourcesData(int userId)
+        private static string GetBatchStatus(bool hasSubmitted, bool allValid, bool hasPending)
+        {
+            if (hasSubmitted)
+            {
+                return StatusSubmitted;
+            }
+
+            if (allValid)
+            {
+                return StatusVerified;
+            }
+
+            if (hasPending)
+            {
+                return StatusPending;
+            }
+
+            return StatusHasIssues;
+        }
+
+        private async Task LoadSourcesData()
         {
             var orgId = GetCurrentOrgId();
             var sources = await _context.DataSources
@@ -850,7 +874,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["AllSources"] = sources;
         }
 
-        private async Task LoadHistoryData(int userId)
+        private async Task LoadHistoryData()
         {
             var orgId = GetCurrentOrgId();
             var logs = await _context.AuditLogs

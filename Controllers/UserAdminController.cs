@@ -4,27 +4,47 @@ using it15_webproject_mvc.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace it15_webproject_mvc.Controllers
 {
     [Authorize(Roles = "UserAdmin")]
     public class UserAdminController : BaseController
     {
+        private const string StatusActive = "Active";
+        private const string StatusInactive = "Inactive";
+        private const string StatusArchived = "Archived";
+        private const string StatusValid = "Valid";
+        private const string StatusError = "Error";
+        private const string StatusWarning = "Warning";
+        private const string StatusPending = "Pending";
+        private const string StatusSubmitted = "Submitted";
+        private const string StatusIntegrated = "Integrated";
+        private const string StatusFailed = "Failed";
+        private const string StatusUnknown = "Unknown";
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<UserAdminController> _logger;
 
-        public UserAdminController(ApplicationDbContext context)
+        public UserAdminController(ApplicationDbContext context, ILogger<UserAdminController> logger)
         {
             _context = context;
+            _logger = logger;
         }
+
+        private sealed record WarehouseSummaryItem(
+            string SourceName,
+            string TargetTable,
+            string Status,
+            DateTime LastLoaded,
+            int BatchCount,
+            int TotalRows,
+            int LatestVersion);
 
         public async Task<IActionResult> UserNav(string section = "dashboard", string? viewTable = null)
         {
             ViewData["Section"] = section.ToLower();
             ViewData["ViewTable"] = viewTable;
             ViewData["OrganizationName"] = GetCurrentOrgName();
-            var subPlan = GetCurrentSubscriptionPlan();
-            ViewData["SubscriptionPlan"] = subPlan;
-
             var adminUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (adminUserIdClaim != null)
             {
@@ -34,7 +54,7 @@ namespace it15_webproject_mvc.Controllers
                 {
                     var orgId = adminUser.OrganizationID;
                     // Always use the DB value as source of truth
-                    subPlan = adminUser.Organization?.SubscriptionPlan ?? "Free";
+                    var subPlan = adminUser.Organization?.SubscriptionPlan ?? "Free";
                     ViewData["SubscriptionPlan"] = subPlan;
 
                     var orgUsers = await _context.Users
@@ -111,7 +131,7 @@ namespace it15_webproject_mvc.Controllers
             if (source == null) return NotFound();
 
             var oldStatus = source.Status;
-            source.Status = source.Status == "Active" ? "Inactive" : "Active";
+            source.Status = source.Status == StatusActive ? StatusInactive : StatusActive;
 
             _context.AuditLogs.Add(new Models.AuditLog
             {
@@ -151,7 +171,7 @@ namespace it15_webproject_mvc.Controllers
 
             var orgId = adminUser.OrganizationID;
             var records = await _context.WarehouseRecords
-                .Where(w => w.OrganizationID == orgId && w.TargetTable == targetTable && w.RecordStatus == "Active")
+                .Where(w => w.OrganizationID == orgId && w.TargetTable == targetTable && w.RecordStatus == StatusActive)
                 .ToListAsync();
 
             if (!records.Any())
@@ -162,7 +182,7 @@ namespace it15_webproject_mvc.Controllers
 
             foreach (var r in records)
             {
-                r.RecordStatus = "Archived";
+                r.RecordStatus = StatusArchived;
             }
 
             _context.AuditLogs.Add(new Models.AuditLog
@@ -202,7 +222,7 @@ namespace it15_webproject_mvc.Controllers
 
             var orgId = adminUser.OrganizationID;
             var records = await _context.WarehouseRecords
-                .Where(w => w.OrganizationID == orgId && w.TargetTable == targetTable && w.RecordStatus == "Archived")
+                .Where(w => w.OrganizationID == orgId && w.TargetTable == targetTable && w.RecordStatus == StatusArchived)
                 .ToListAsync();
 
             if (!records.Any())
@@ -213,7 +233,7 @@ namespace it15_webproject_mvc.Controllers
 
             foreach (var r in records)
             {
-                r.RecordStatus = "Active";
+                r.RecordStatus = StatusActive;
             }
 
             _context.AuditLogs.Add(new Models.AuditLog
@@ -238,7 +258,7 @@ namespace it15_webproject_mvc.Controllers
             // Consolidate source counts
             var sourceCounts = await _context.DataSources.AsNoTracking()
                 .Where(s => s.OrganizationID == orgId)
-                .GroupBy(s => s.Status == "Active")
+                .GroupBy(s => s.Status == StatusActive)
                 .Select(g => new { IsActive = g.Key, Count = g.Count() })
                 .ToListAsync();
             ViewData["TotalSources"] = sourceCounts.Sum(s => s.Count);
@@ -251,9 +271,9 @@ namespace it15_webproject_mvc.Controllers
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
             ViewData["TotalSubmissions"] = submissionCounts.Sum(s => s.Count);
-            ViewData["IntegratedCount"] = submissionCounts.Where(s => s.Status == "Integrated").Sum(s => s.Count);
-            ViewData["PendingCount"] = submissionCounts.Where(s => s.Status == "Submitted").Sum(s => s.Count);
-            ViewData["FailedCount"] = submissionCounts.Where(s => s.Status == "Failed").Sum(s => s.Count);
+            ViewData["IntegratedCount"] = submissionCounts.Where(s => s.Status == StatusIntegrated).Sum(s => s.Count);
+            ViewData["PendingCount"] = submissionCounts.Where(s => s.Status == StatusSubmitted).Sum(s => s.Count);
+            ViewData["FailedCount"] = submissionCounts.Where(s => s.Status == StatusFailed).Sum(s => s.Count);
 
             // Consolidate staging record counts
             var stagingCounts = await _context.StagingRecords.AsNoTracking()
@@ -262,8 +282,8 @@ namespace it15_webproject_mvc.Controllers
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
             ViewData["TotalStagingRows"] = stagingCounts.Sum(s => s.Count);
-            ViewData["ValidRows"] = stagingCounts.Where(s => s.Status == "Valid").Sum(s => s.Count);
-            ViewData["ErrorRows"] = stagingCounts.Where(s => s.Status == "Error").Sum(s => s.Count);
+            ViewData["ValidRows"] = stagingCounts.Where(s => s.Status == StatusValid).Sum(s => s.Count);
+            ViewData["ErrorRows"] = stagingCounts.Where(s => s.Status == StatusError).Sum(s => s.Count);
 
             ViewData["TotalAuditLogs"] = await _context.AuditLogs.AsNoTracking().CountAsync(a => a.OrganizationID == orgId);
 
@@ -298,7 +318,7 @@ namespace it15_webproject_mvc.Controllers
             ViewData["AllSources"] = sources;
 
             ViewData["TotalSources"] = sources.Count;
-            ViewData["ActiveSources"] = sources.Count(s => s.Status == "Active");
+            ViewData["ActiveSources"] = sources.Count(s => s.Status == StatusActive);
         }
 
         private async Task LoadETLData(int orgId)
@@ -320,32 +340,16 @@ namespace it15_webproject_mvc.Controllers
                 .Select(g => new { Status = g.Key, Count = g.Count(), Rows = g.Sum(s => s.TotalRows) })
                 .ToListAsync();
             ViewData["TotalSubmissions"] = etlCounts.Sum(s => s.Count);
-            ViewData["IntegratedCount"] = etlCounts.Where(s => s.Status == "Integrated").Sum(s => s.Count);
-            ViewData["PendingCount"] = etlCounts.Where(s => s.Status == "Submitted").Sum(s => s.Count);
-            ViewData["FailedCount"] = etlCounts.Where(s => s.Status == "Failed").Sum(s => s.Count);
+            ViewData["IntegratedCount"] = etlCounts.Where(s => s.Status == StatusIntegrated).Sum(s => s.Count);
+            ViewData["PendingCount"] = etlCounts.Where(s => s.Status == StatusSubmitted).Sum(s => s.Count);
+            ViewData["FailedCount"] = etlCounts.Where(s => s.Status == StatusFailed).Sum(s => s.Count);
             ViewData["TotalRowsProcessed"] = etlCounts.Sum(s => s.Rows);
         }
 
         private async Task LoadStorageData(int orgId, string? viewTable)
         {
             // Warehouse records grouped by target table
-            var warehouseSummary = await _context.WarehouseRecords
-                .AsNoTracking()
-                .Include(w => w.DataSource)
-                .Where(w => w.OrganizationID == orgId && w.RecordStatus == "Active")
-                .GroupBy(w => new { w.TargetTable, w.DataSourceID })
-                .Select(g => new
-                {
-                    SourceName = g.First().DataSource!.SourceName,
-                    TargetTable = g.Key.TargetTable,
-                    Status = g.First().DataSource!.Status,
-                    LastLoaded = g.Max(w => w.Loaded_at),
-                    BatchCount = g.Select(w => w.BatchId).Distinct().Count(),
-                    TotalRows = g.Count(),
-                    LatestVersion = g.Max(w => w.Version)
-                })
-                .OrderByDescending(s => s.TotalRows)
-                .ToListAsync();
+            var warehouseSummary = await GetWarehouseSummaryAsync(orgId);
             ViewData["WarehouseSummary"] = warehouseSummary;
 
             ViewData["TotalTables"] = warehouseSummary.Select(s => s.TargetTable).Distinct().Count();
@@ -356,7 +360,7 @@ namespace it15_webproject_mvc.Controllers
             var recentLoads = await _context.DataSubmissions
                 .AsNoTracking()
                 .Include(s => s.DataSource)
-                .Where(s => s.OrganizationID == orgId && s.Status == "Integrated")
+                .Where(s => s.OrganizationID == orgId && s.Status == StatusIntegrated)
                 .OrderByDescending(s => s.Integrated_at)
                 .Take(10)
                 .ToListAsync();
@@ -364,20 +368,20 @@ namespace it15_webproject_mvc.Controllers
 
             // Staging vs Warehouse comparison
             var totalStagingRows = await _context.StagingRecords.AsNoTracking().CountAsync(r => r.DataSource!.OrganizationID == orgId);
-            var totalWarehouseRows = await _context.WarehouseRecords.AsNoTracking().CountAsync(w => w.OrganizationID == orgId && w.RecordStatus == "Active");
-            var archivedRows = await _context.WarehouseRecords.AsNoTracking().CountAsync(w => w.OrganizationID == orgId && w.RecordStatus == "Archived");
+            var totalWarehouseRows = await _context.WarehouseRecords.AsNoTracking().CountAsync(w => w.OrganizationID == orgId && w.RecordStatus == StatusActive);
+            var archivedRows = await _context.WarehouseRecords.AsNoTracking().CountAsync(w => w.OrganizationID == orgId && w.RecordStatus == StatusArchived);
             ViewData["TotalStagingRows"] = totalStagingRows;
             ViewData["TotalStoredRows"] = totalWarehouseRows;
             ViewData["ArchivedRows"] = archivedRows;
 
             // Load available table names for the dropdown
-            var tableNames = warehouseSummary.Select(s => (string)s.TargetTable).Distinct().ToList();
+            var tableNames = warehouseSummary.Select(s => s.TargetTable).Distinct().ToList();
             ViewData["TableNames"] = tableNames;
 
             // Archived tables for restore actions (includes tables that currently have no active rows)
             var archivedTableNames = await _context.WarehouseRecords
                 .AsNoTracking()
-                .Where(w => w.OrganizationID == orgId && w.RecordStatus == "Archived")
+                .Where(w => w.OrganizationID == orgId && w.RecordStatus == StatusArchived)
                 .Select(w => w.TargetTable)
                 .Distinct()
                 .OrderBy(t => t)
@@ -447,10 +451,10 @@ namespace it15_webproject_mvc.Controllers
                     DataSourceName = g.First().DataSource!.SourceName,
                     TargetTable = g.First().DataSource!.TargetTable,
                     TotalRows = g.Count(),
-                    ValidRows = g.Count(r => r.ValidationStatus == "Valid"),
-                    ErrorRows = g.Count(r => r.ValidationStatus == "Error"),
-                    WarningRows = g.Count(r => r.ValidationStatus == "Warning"),
-                    PendingRows = g.Count(r => r.ValidationStatus == "Pending"),
+                    ValidRows = g.Count(r => r.ValidationStatus == StatusValid),
+                    ErrorRows = g.Count(r => r.ValidationStatus == StatusError),
+                    WarningRows = g.Count(r => r.ValidationStatus == StatusWarning),
+                    PendingRows = g.Count(r => r.ValidationStatus == StatusPending),
                     PulledAt = g.Min(r => r.Pulled_at)
                 })
                 .OrderByDescending(b => b.PulledAt)
@@ -466,10 +470,10 @@ namespace it15_webproject_mvc.Controllers
                 .ToListAsync();
 
             var totalRows = cleansingStats.Sum(s => s.Count);
-            var validRows = cleansingStats.Where(s => s.Status == "Valid").Sum(s => s.Count);
-            var errorRows = cleansingStats.Where(s => s.Status == "Error").Sum(s => s.Count);
-            var warningRows = cleansingStats.Where(s => s.Status == "Warning").Sum(s => s.Count);
-            var pendingRows = cleansingStats.Where(s => s.Status == "Pending").Sum(s => s.Count);
+            var validRows = cleansingStats.Where(s => s.Status == StatusValid).Sum(s => s.Count);
+            var errorRows = cleansingStats.Where(s => s.Status == StatusError).Sum(s => s.Count);
+            var warningRows = cleansingStats.Where(s => s.Status == StatusWarning).Sum(s => s.Count);
+            var pendingRows = cleansingStats.Where(s => s.Status == StatusPending).Sum(s => s.Count);
 
             ViewData["TotalRows"] = totalRows;
             ViewData["ValidRows"] = validRows;
@@ -593,7 +597,7 @@ namespace it15_webproject_mvc.Controllers
                 Full_name = fullName.Trim(),
                 Email = email.Trim(),
                 Password = BCrypt.Net.BCrypt.HashPassword(password),
-                Account_status = accountStatus ?? "Active",
+                Account_status = accountStatus ?? StatusActive,
                 Created_at = DateTime.UtcNow
             };
 
