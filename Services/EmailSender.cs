@@ -37,7 +37,7 @@ namespace it15_webproject_mvc.Services
                 port = 587;
             }
 
-            _ = bool.TryParse(useSslValue, out var useSsl);
+            var useSsl = true;
 
             using var client = new SmtpClient(host, port)
             {

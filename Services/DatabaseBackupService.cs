@@ -1,11 +1,14 @@
 using it15_webproject_mvc.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
+using System.Text.RegularExpressions;
 
 namespace it15_webproject_mvc.Services
 {
     public class DatabaseBackupService : BackgroundService
     {
+        private static readonly Regex DatabaseNamePattern = new("^[A-Za-z0-9_]+$", RegexOptions.Compiled);
         private static readonly TimeSpan RunInterval = TimeSpan.FromDays(1);
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConfiguration _configuration;
@@ -80,14 +83,20 @@ namespace it15_webproject_mvc.Services
                 return;
             }
 
+            if (!DatabaseNamePattern.IsMatch(databaseName))
+            {
+                _logger.LogWarning("DatabaseBackupService skipped because the database name contains invalid characters.");
+                return;
+            }
+
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var backupFileName = $"{databaseName}_{timestamp}.bak";
             var backupFilePath = Path.Combine(backupPath, backupFileName);
 
             var backupCommand = $@"
-BACKUP DATABASE [{databaseName}]
-TO DISK = N'{backupFilePath.Replace("'", "''")}'
-WITH INIT, COMPRESSION, CHECKSUM;";
+ BACKUP DATABASE [{databaseName}]
+ TO DISK = @backupPath
+ WITH INIT, COMPRESSION, CHECKSUM;";
 
             await using (var connection = new SqlConnection(connectionString))
             {
@@ -96,6 +105,10 @@ WITH INIT, COMPRESSION, CHECKSUM;";
                 {
                     CommandTimeout = 0
                 };
+                command.Parameters.Add(new SqlParameter("@backupPath", SqlDbType.NVarChar, 260)
+                {
+                    Value = backupFilePath
+                });
                 await command.ExecuteNonQueryAsync(cancellationToken);
             }
 

@@ -584,12 +584,17 @@ namespace it15_webproject_mvc.Controllers
 
         private static bool IsValidLoginIdentifier(string identifier)
         {
+            if (IsValidEmail(identifier))
+            {
+                return true;
+            }
+
             if (identifier.Length > 30)
             {
                 return false;
             }
 
-            return IsValidUsername(identifier) || IsValidEmail(identifier);
+            return IsValidUsername(identifier);
         }
 
         [HttpPost("superadmin-lockdown")]

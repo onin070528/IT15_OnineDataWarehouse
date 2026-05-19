@@ -623,6 +623,40 @@ namespace it15_webproject_mvc.Data
             }
         }
 
+        private static void EnsureTableExists(ILogger? logger, string tableName, Func<bool> tableCheck, Action createTable)
+        {
+            var tableExists = false;
+
+            try
+            {
+                _ = tableCheck();
+                tableExists = true;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "DbInitializer: Failed to validate table {TableName}. Will attempt to create it.", tableName);
+            }
+
+            if (tableExists)
+            {
+                return;
+            }
+
+            TryExecute(logger, createTable, $"Ensure {tableName} table");
+        }
+
+        private static void TryExecute(ILogger? logger, Action action, string description)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "DbInitializer: {Description} failed.", description);
+            }
+        }
+
         private static void EnsureSecurityConfigurations(ApplicationDbContext context)
         {
             EnsureSystemConfig(context, "SuperAdminLockdownEnabled", "false", "Block SuperAdmin access during incident response");
