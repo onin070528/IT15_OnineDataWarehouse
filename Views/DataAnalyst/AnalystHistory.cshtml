@@ -1,14 +1,15 @@
 @using it15_webproject_mvc.Models
+@using System.Linq
 @{
     var logs = ViewData["AuditLogs"] as List<AuditLog> ?? new List<AuditLog>();
     var totalActions = (int)(ViewData["TotalActions"] ?? 0);
     var todayActions = (int)(ViewData["TodayActions"] ?? 0);
     var uniqueEntities = (int)(ViewData["UniqueEntities"] ?? 0);
     var uniqueUsers = (int)(ViewData["UniqueUsers"] ?? 0);
-    var actionBreakdown = ViewData["ActionBreakdown"] as dynamic;
-    var versionHistory = ViewData["VersionHistory"] as dynamic;
-    var monthlyActivity = ViewData["MonthlyActivity"] as dynamic;
-    var monthlyRecordsPulled = ViewData["MonthlyRecordsPulled"] as dynamic;
+    var actionBreakdown = ViewData["ActionBreakdown"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var versionHistory = ViewData["VersionHistory"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var monthlyActivity = ViewData["MonthlyActivity"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var monthlyRecordsPulled = ViewData["MonthlyRecordsPulled"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
 }
 
 <div class="p-8 min-h-full" style="background-color: #EBF4F6;">
@@ -70,7 +71,7 @@
     </div>
 
     <!-- Action Breakdown -->
-    @if (actionBreakdown != null && ((System.Collections.ICollection)actionBreakdown!).Count > 0)
+    @if (actionBreakdown.Any())
     {
         <div class="bg-white rounded-2xl shadow-sm p-8 mb-8" style="border: 1px solid #7AB2B2;">
             <div class="flex items-center gap-3 mb-6">
@@ -85,7 +86,7 @@
                 </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                @foreach (var item in (IEnumerable<dynamic>)actionBreakdown!)
+                @foreach (var item in actionBreakdown)
                 {
                     var barColor = (string)item.Action switch
                     {
@@ -119,7 +120,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
 
         <!-- Data Version History -->
-        @if (versionHistory != null && ((System.Collections.ICollection)versionHistory!).Count > 0)
+        @if (versionHistory.Any())
         {
             <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
                 <div class="flex items-center gap-3 mb-6">
@@ -146,7 +147,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var v in (IEnumerable<dynamic>)versionHistory!)
+                            @foreach (var v in versionHistory)
                             {
                                 <tr class="border-b border-gray-100 hover:bg-gray-50">
                                     <td class="py-2.5 px-3 font-mono text-xs text-gray-700">@v.TargetTable</td>
@@ -166,7 +167,7 @@
         }
 
         <!-- Monthly Activity Trend -->
-        @if (monthlyActivity != null && ((System.Collections.ICollection)monthlyActivity!).Count > 0)
+        @if (monthlyActivity.Any())
         {
             <div class="bg-white rounded-2xl shadow-sm p-8" style="border: 1px solid #7AB2B2;">
                 <div class="flex items-center gap-3 mb-6">
@@ -183,9 +184,9 @@
                 <div class="space-y-3">
                     @{
                         var maxActivity = 1;
-                        foreach (var m in (IEnumerable<dynamic>)monthlyActivity!) { if ((int)m.Count > maxActivity) maxActivity = (int)m.Count; }
+                        foreach (var m in monthlyActivity) { if ((int)m.Count > maxActivity) maxActivity = (int)m.Count; }
                     }
-                    @foreach (var m in (IEnumerable<dynamic>)monthlyActivity!)
+                    @foreach (var m in monthlyActivity)
                     {
                         var monthName = new DateTime((int)m.Year, (int)m.Month, 1).ToString("MMM yyyy");
                         var pctWidth = Math.Max(5, (int)m.Count * 100 / maxActivity);
@@ -200,15 +201,15 @@
                     }
                 </div>
 
-                @if (monthlyRecordsPulled != null && ((System.Collections.ICollection)monthlyRecordsPulled!).Count > 0)
+                @if (monthlyRecordsPulled.Any())
                 {
                     <h4 class="text-sm font-bold text-gray-700 mt-6 mb-3">Records Pulled</h4>
                     <div class="space-y-3">
                         @{
                             var maxPulled = 1;
-                            foreach (var m in (IEnumerable<dynamic>)monthlyRecordsPulled!) { if ((int)m.Count > maxPulled) maxPulled = (int)m.Count; }
+                            foreach (var m in monthlyRecordsPulled) { if ((int)m.Count > maxPulled) maxPulled = (int)m.Count; }
                         }
-                        @foreach (var m in (IEnumerable<dynamic>)monthlyRecordsPulled!)
+                        @foreach (var m in monthlyRecordsPulled)
                         {
                             var monthName = new DateTime((int)m.Year, (int)m.Month, 1).ToString("MMM yyyy");
                             var pctWidth = Math.Max(5, (int)m.Count * 100 / maxPulled);
