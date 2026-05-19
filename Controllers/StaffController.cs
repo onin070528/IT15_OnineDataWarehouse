@@ -29,13 +29,7 @@ namespace it15_webproject_mvc.Controllers
 
         public async Task<IActionResult> StaffNav(string section = "dashboard")
         {
-            ViewData["Section"] = section.ToLower();
-            ViewData["OrganizationName"] = GetCurrentOrgName();
-
-            var orgId = GetCurrentOrgId();
-            var org = await _context.Organizations.FindAsync(orgId);
-            var subPlan = org?.SubscriptionPlan ?? "Free";
-            ViewData["SubscriptionPlan"] = subPlan;
+            await SetSectionAndOrganizationAsync(_context, section);
 
             switch (section.ToLower())
             {

@@ -1,10 +1,21 @@
 using System.Security.Claims;
+using it15_webproject_mvc.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace it15_webproject_mvc.Controllers
 {
     public abstract class BaseController : Controller
     {
+        protected async Task SetSectionAndOrganizationAsync(ApplicationDbContext context, string section)
+        {
+            ViewData["Section"] = section.ToLower();
+            ViewData["OrganizationName"] = GetCurrentOrgName();
+
+            var orgId = GetCurrentOrgId();
+            var org = await context.Organizations.FindAsync(orgId);
+            ViewData["SubscriptionPlan"] = org?.SubscriptionPlan ?? "Free";
+        }
+
         protected int GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);

@@ -106,6 +106,24 @@ namespace it15_webproject_mvc.Controllers
         public IActionResult UserCleansing() => View();
         public IActionResult UserHistory() => View();
 
+        private async Task<(int AdminUserId, int OrgId)?> GetAdminContextAsync()
+        {
+            var adminUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (adminUserIdClaim == null)
+            {
+                return null;
+            }
+
+            var adminUserId = int.Parse(adminUserIdClaim);
+            var adminUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserID == adminUserId);
+            if (adminUser == null)
+            {
+                return null;
+            }
+
+            return (adminUserId, adminUser.OrganizationID);
+        }
+
         // === TOGGLE DATA SOURCE STATUS ===
 
         [HttpPost]
@@ -117,14 +135,15 @@ namespace it15_webproject_mvc.Controllers
                 return BadRequest();
             }
 
-            var adminUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (adminUserIdClaim == null) return RedirectToAction("Login", "Home");
+            var adminContext = await GetAdminContextAsync();
+            if (adminContext == null)
+            {
+                return RedirectToAction("Login", "Home");
+            }
 
-            var adminUserId = int.Parse(adminUserIdClaim);
-            var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.UserID == adminUserId);
-            if (adminUser == null) return RedirectToAction("Login", "Home");
+            var (adminUserId, orgId) = adminContext.Value;
 
-            var source = await _context.DataSources.FirstOrDefaultAsync(s => s.DataSourceID == dataSourceId && s.OrganizationID == adminUser.OrganizationID);
+            var source = await _context.DataSources.FirstOrDefaultAsync(s => s.DataSourceID == dataSourceId && s.OrganizationID == orgId);
             if (source == null) return NotFound();
 
             var oldStatus = source.Status;
@@ -138,7 +157,7 @@ namespace it15_webproject_mvc.Controllers
                 EntityName = source.SourceName,
                 Details = $"Status changed from {oldStatus} to {source.Status}",
                 PerformedByUserID = adminUserId,
-                OrganizationID = adminUser.OrganizationID,
+                OrganizationID = orgId,
                 Performed_at = DateTime.UtcNow
             });
 
@@ -159,14 +178,13 @@ namespace it15_webproject_mvc.Controllers
                 return BadRequest();
             }
 
-            var adminUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (adminUserIdClaim == null) return RedirectToAction("Login", "Home");
+            var adminContext = await GetAdminContextAsync();
+            if (adminContext == null)
+            {
+                return RedirectToAction("Login", "Home");
+            }
 
-            var adminUserId = int.Parse(adminUserIdClaim);
-            var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.UserID == adminUserId);
-            if (adminUser == null) return RedirectToAction("Login", "Home");
-
-            var orgId = adminUser.OrganizationID;
+            var (adminUserId, orgId) = adminContext.Value;
             var records = await _context.WarehouseRecords
                 .Where(w => w.OrganizationID == orgId && w.TargetTable == targetTable && w.RecordStatus == StatusActive)
                 .ToListAsync();
@@ -210,14 +228,13 @@ namespace it15_webproject_mvc.Controllers
                 return BadRequest();
             }
 
-            var adminUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (adminUserIdClaim == null) return RedirectToAction("Login", "Home");
+            var adminContext = await GetAdminContextAsync();
+            if (adminContext == null)
+            {
+                return RedirectToAction("Login", "Home");
+            }
 
-            var adminUserId = int.Parse(adminUserIdClaim);
-            var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.UserID == adminUserId);
-            if (adminUser == null) return RedirectToAction("Login", "Home");
-
-            var orgId = adminUser.OrganizationID;
+            var (adminUserId, orgId) = adminContext.Value;
             var records = await _context.WarehouseRecords
                 .Where(w => w.OrganizationID == orgId && w.TargetTable == targetTable && w.RecordStatus == StatusArchived)
                 .ToListAsync();

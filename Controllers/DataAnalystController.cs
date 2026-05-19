@@ -32,13 +32,8 @@ namespace it15_webproject_mvc.Controllers
 
         public async Task<IActionResult> AnalystNav(string section = "dashboard", string? viewTable = null)
         {
-            ViewData["Section"] = section.ToLower();
-            ViewData["OrganizationName"] = GetCurrentOrgName();
+            await SetSectionAndOrganizationAsync(_context, section);
             ViewData["ViewTable"] = viewTable;
-
-            var orgId = GetCurrentOrgId();
-            var org = await _context.Organizations.FindAsync(orgId);
-            ViewData["SubscriptionPlan"] = org?.SubscriptionPlan ?? "Free";
 
             switch (section.ToLower())
             {

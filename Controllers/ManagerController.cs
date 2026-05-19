@@ -37,12 +37,7 @@ namespace it15_webproject_mvc.Controllers
 
         public async Task<IActionResult> ManagerNav(string section = "dashboard")
         {
-            ViewData["Section"] = section.ToLower();
-            ViewData["OrganizationName"] = GetCurrentOrgName();
-
-            var orgId = GetCurrentOrgId();
-            var org = await _context.Organizations.FindAsync(orgId);
-            ViewData["SubscriptionPlan"] = org?.SubscriptionPlan ?? "Free";
+            await SetSectionAndOrganizationAsync(_context, section);
 
             switch (section.ToLower())
             {
