@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using it15_webproject_mvc.Data;
+using it15_webproject_mvc.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -306,71 +307,12 @@ namespace it15_webproject_mvc.Controllers
                 .ToListAsync();
 
             var allColumns = new List<string>();
-            var parsedRows = ParseWarehouseRows(warehouseRows, allColumns);
+            var parsedRows = WarehouseRowParser.ParseWarehouseRows(warehouseRows, allColumns, _logger);
 
             ViewData["WarehouseColumns"] = allColumns;
             ViewData["WarehouseRows"] = parsedRows;
             ViewData["WarehouseRowCount"] = warehouseRows.Count;
             ViewData["SelectedTable"] = viewTable;
-        }
-
-        private List<Dictionary<string, string>> ParseWarehouseRows(
-            IEnumerable<WarehouseRecord> warehouseRows,
-            List<string> allColumns)
-        {
-            var parsedRows = new List<Dictionary<string, string>>();
-
-            foreach (var row in warehouseRows)
-            {
-                if (TryParseWarehouseRow(row, allColumns, out var rowData))
-                {
-                    parsedRows.Add(rowData);
-                }
-            }
-
-            return parsedRows;
-        }
-
-        private bool TryParseWarehouseRow(
-            WarehouseRecord row,
-            List<string> allColumns,
-            out Dictionary<string, string> rowData)
-        {
-            rowData = new Dictionary<string, string>();
-
-            try
-            {
-                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(row.CleanData);
-                if (dict == null)
-                {
-                    return false;
-                }
-
-                foreach (var kvp in dict)
-                {
-                    if (!allColumns.Contains(kvp.Key))
-                    {
-                        allColumns.Add(kvp.Key);
-                    }
-
-                    rowData[kvp.Key] = kvp.Value.ValueKind switch
-                    {
-                        JsonValueKind.String => kvp.Value.GetString() ?? "",
-                        JsonValueKind.Number => kvp.Value.GetRawText(),
-                        JsonValueKind.True => "true",
-                        JsonValueKind.False => "false",
-                        JsonValueKind.Null => "",
-                        _ => kvp.Value.GetRawText()
-                    };
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to parse warehouse record {RecordId}", row.WarehouseRecordID);
-                return false;
-            }
         }
 
         private sealed record WarehouseSummaryItem(
