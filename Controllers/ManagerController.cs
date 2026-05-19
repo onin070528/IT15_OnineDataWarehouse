@@ -233,7 +233,7 @@ namespace it15_webproject_mvc.Controllers
                     s.Status,
                     s.Last_sync,
                     BatchCount = s.StagingRecords.Select(r => r.BatchId).Distinct().Count(),
-                    TotalRows = s.StagingRecords.Count()
+                    TotalRows = s.StagingRecords.Count
                 })
                 .OrderByDescending(s => s.TotalRows)
                 .ToListAsync();
@@ -433,7 +433,7 @@ namespace it15_webproject_mvc.Controllers
                     s.Created_at,
                     s.Last_sync,
                     TotalBatches = s.StagingRecords.Select(r => r.BatchId).Distinct().Count(),
-                    TotalRows = s.StagingRecords.Count(),
+                    TotalRows = s.StagingRecords.Count,
                     ValidRows = s.StagingRecords.Count(r => r.ValidationStatus == StatusValid),
                     ErrorRows = s.StagingRecords.Count(r => r.ValidationStatus == StatusError)
                 })
@@ -782,7 +782,7 @@ namespace it15_webproject_mvc.Controllers
             };
         }
 
-        private void UpdateSubmissionAfterApproval(DataSubmission submission, int loadedCount, int skippedCount)
+        private static void UpdateSubmissionAfterApproval(DataSubmission submission, int loadedCount, int skippedCount)
         {
             submission.Status = StatusIntegrated;
             submission.Integrated_at = DateTime.UtcNow;
